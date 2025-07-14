@@ -125,7 +125,7 @@ class _GameScreenState extends State<GameScreen> {
                       onStop: _model.stopMovingRight,
                     ),
                   ),
-
+                ),
                 if (_model.state == GameState.levelCompleted)
                   const Center(
                     child: Text(
@@ -163,7 +163,6 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                     ),
                   ),
-
               ],
             ),
           );

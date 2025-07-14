@@ -110,6 +110,7 @@ class GameViewModel extends ChangeNotifier {
     score = 0;
     _setupLevel();
     _gameTimer = Timer.periodic(frameDuration, _update);
+    _focusNode.requestFocus();
     notifyListeners();
   }
 

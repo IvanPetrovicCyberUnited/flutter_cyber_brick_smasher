@@ -6,6 +6,7 @@ import '../models/power_up.dart';
 import '../utils/constants.dart';
 import '../view_models/game_view_model.dart';
 
+
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
 

@@ -23,6 +23,7 @@ class GameScreen extends StatelessWidget {
               child: Image.asset('assets/images/ball.png'),
             ),
           ),
+
         ],
       ),
     );

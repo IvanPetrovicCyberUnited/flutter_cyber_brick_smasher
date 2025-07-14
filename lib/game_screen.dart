@@ -4,12 +4,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
 
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
+
 
 enum PowerUpType { fireball, magnet, multiball, phaseball, gun }
 
@@ -40,6 +42,7 @@ class _GameScreenState extends State<GameScreen> {
   Timer? _rightTimer;
   late FocusNode _focusNode;
 
+
   double _ballX = 0.5; // fractional position across the width
   double _ballY = 0.9; // fractional position down the screen
   double _dx = 0.01;
@@ -62,6 +65,7 @@ class _GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
+
     _createBlocks();
     _timer = Timer.periodic(const Duration(milliseconds: 16), _updateBall);
   }
@@ -353,6 +357,7 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
             ],
+
           ),
           );
         },

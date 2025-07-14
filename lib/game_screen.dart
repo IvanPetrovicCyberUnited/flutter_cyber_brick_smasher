@@ -17,14 +17,17 @@ class _GameScreenState extends State<GameScreen> {
   double _ballX = 0.5; // fractional position across the width
   double _ballY = 0.9; // fractional position down the screen
   double _dx = 0.01;
-  double _dy = -0.01; // move upward slightly
+  double _dy = -0.01; // moving direction vertically
 
   double _paddleX = 0.5; // fractional position of paddle across width
   final double _paddleSpeed = 0.02;
 
+  final List<Rect> _blocks = [];
+
   @override
   void initState() {
     super.initState();
+    _createBlocks();
     _timer = Timer.periodic(const Duration(milliseconds: 16), _updateBall);
   }
 
@@ -56,41 +59,42 @@ class _GameScreenState extends State<GameScreen> {
     _rightTimer = null;
   }
 
+  void _createBlocks() {
+    const int rows = 4;
+    const int cols = 6;
+    const double spacing = 0.02;
+    const double topOffset = 0.1;
+    const double blockHeight = 0.05;
+    final double blockWidth = (1 - (cols + 1) * spacing) / cols;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final double x = spacing + c * (blockWidth + spacing);
+        final double y = topOffset + r * (blockHeight + spacing);
+        _blocks.add(Rect.fromLTWH(x, y, blockWidth, blockHeight));
+      }
+    }
+  }
+
   void _updateBall(Timer timer) {
     setState(() {
       _ballX += _dx;
       _ballY += _dy;
-
-      // Wände
       if (_ballX <= 0 || _ballX >= 1) {
         _dx = -_dx;
         _ballX = _ballX.clamp(0.0, 1.0);
       }
-
-      // Oben
       if (_ballY <= 0) {
         _dy = -_dy;
         _ballY = _ballY.clamp(0.0, 1.0);
       }
 
-      // Paddle-Kollision
-      final screenHeight = MediaQuery.of(context).size.height;
-      final paddleHeight = 16.0; // in px
-      final paddleY = 1.0 - (48 + paddleHeight) / screenHeight; // 48 = padding
-
-      final paddleWidthFraction =
-          64.0 / MediaQuery.of(context).size.width; // 64 px breit
-      final paddleLeft = _paddleX - paddleWidthFraction / 2;
-      final paddleRight = _paddleX + paddleWidthFraction / 2;
-
-      final ballRadius = 8.0 / MediaQuery.of(context).size.height; // 16x16 Ball
-      final ballBottom = _ballY + ballRadius;
-
-      if (_dy > 0 && // nur bei Abwärtsbewegung prüfen
-          ballBottom >= paddleY &&
-          _ballX >= paddleLeft &&
-          _ballX <= paddleRight) {
+      // simple paddle collision when moving downward
+      const double paddleY = 0.95; // approximate fractional vertical position
+      const double paddleHalfWidth = 0.1; // half the paddle width as fraction
+      if (_dy > 0 && _ballY >= paddleY &&
+          (_ballX - _paddleX).abs() <= paddleHalfWidth) {
         _dy = -_dy;
+        _ballY = paddleY;
       }
     });
   }
@@ -107,42 +111,56 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Align(
-            alignment: Alignment(2 * _paddleX - 1, 1),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 48.0),
-              child: Image.asset('assets/images/paddle.png'),
-            ),
-          ),
-          Align(
-            alignment: Alignment(2 * _ballX - 1, 2 * _ballY - 1),
-            child: Image.asset('assets/images/ball.png'),
-          ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: _buildMoveButton(
-                icon: Icons.arrow_left,
-                onStart: _startMovingLeft,
-                onStop: _stopMovingLeft,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final height = constraints.maxHeight;
+          return Stack(
+            children: [
+              for (final block in _blocks)
+                Positioned(
+                  left: block.left * width,
+                  top: block.top * height,
+                  width: block.width * width,
+                  height: block.height * height,
+                  child: Image.asset('assets/images/block_1.png'),
+                ),
+              Align(
+                alignment: Alignment(2 * _paddleX - 1, 1),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 48.0),
+                  child: Image.asset('assets/images/paddle.png'),
+                ),
               ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: _buildMoveButton(
-                icon: Icons.arrow_right,
-                onStart: _startMovingRight,
-                onStop: _stopMovingRight,
+              Align(
+                alignment: Alignment(2 * _ballX - 1, 2 * _ballY - 1),
+                child: Image.asset('assets/images/ball.png'),
               ),
-            ),
-          ),
-        ],
+              Align(
+                alignment: Alignment.bottomLeft,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: _buildMoveButton(
+                    icon: Icons.arrow_left,
+                    onStart: _startMovingLeft,
+                    onStop: _stopMovingLeft,
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: _buildMoveButton(
+                    icon: Icons.arrow_right,
+                    onStart: _startMovingRight,
+                    onStop: _stopMovingRight,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

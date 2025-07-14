@@ -3,6 +3,14 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../models/ball.dart';
+import '../models/ball_decorator.dart';
+import '../models/block.dart';
+import '../models/normal_block.dart';
+import '../models/unbreakable_block.dart';
+import '../models/special_block.dart';
+import '../models/power_up.dart';
+import '../utils/constants.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -12,79 +20,8 @@ class GameScreen extends StatefulWidget {
 }
 
 
-enum PowerUpType { fireball, magnet, multiball, phaseball, gun }
 
-String _powerUpImage(PowerUpType type) {
-  switch (type) {
-    case PowerUpType.fireball:
-      return 'assets/images/powerup_fireball.png';
-    case PowerUpType.magnet:
-      return 'assets/images/powerup_magnet.png';
-    case PowerUpType.multiball:
-      return 'assets/images/powerup_multiball.png';
-    case PowerUpType.phaseball:
-      return 'assets/images/powerup_phaseball.png';
-    case PowerUpType.gun:
-      return 'assets/images/powerup_gun.png';
-  }
-}
 
-class _FallingPowerUp {
-  _FallingPowerUp({required this.type, required this.position});
-  PowerUpType type;
-  Offset position;
-}
-
-abstract class Block {
-  Block({required this.position, required this.size, required this.hitPoints});
-
-  Offset position;
-  Size size;
-  int hitPoints;
-
-  Rect get rect => Rect.fromLTWH(position.dx, position.dy, size.width, size.height);
-
-  String get imagePath;
-
-  /// Returns true if the block is destroyed after this hit.
-  bool hit() {
-    if (hitPoints > 0) {
-      hitPoints--;
-    }
-    return hitPoints <= 0;
-  }
-}
-
-class NormalBlock extends Block {
-  NormalBlock({required super.position, required super.size, required String image})
-      : _imagePath = image,
-        super(hitPoints: 1);
-
-  final String _imagePath;
-
-  @override
-  String get imagePath => _imagePath;
-}
-
-class UnbreakableBlock extends Block {
-  UnbreakableBlock({required super.position, required super.size})
-      : super(hitPoints: -1);
-
-  @override
-  bool hit() => false;
-
-  @override
-  String get imagePath => 'assets/images/block_5.png';
-}
-
-class SpecialBlock extends Block {
-  SpecialBlock({required super.position, required super.size}) : super(hitPoints: 2);
-
-  @override
-  String get imagePath => hitPoints == 2
-      ? 'assets/images/special_block_intact.png'
-      : 'assets/images/special_block_damaged.png';
-}
 
 class _GameScreenState extends State<GameScreen> {
   late Timer _timer;
@@ -93,23 +30,20 @@ class _GameScreenState extends State<GameScreen> {
   late FocusNode _focusNode;
 
 
-  double _ballX = 0.5; // fractional position across the width
-  double _ballY = 0.9; // fractional position down the screen
-  double _dx = 0.01;
-  double _dy = -0.01; // moving direction vertically
+  late Ball _ball;
 
-  double _paddleX = 0.5; // fractional position of paddle across width
-  final double _paddleSpeed = 0.02;
+  double _paddleX = paddleInitialX; // fractional position of paddle across width
+  final double _paddleSpeed = paddleSpeed;
 
   final List<Block> _blocks = [];
   int _score = 0;
-  final List<_FallingPowerUp> _powerUps = [];
+  final List<FallingPowerUp> _powerUps = [];
   final Set<PowerUpType> _activePowerUps = {};
   final Map<PowerUpType, Timer> _timers = {};
-  final double _powerUpSpeed = 0.01;
+  final double _powerUpSpeed = powerUpSpeed;
   final List<Offset> _projectiles = [];
   Timer? _gunFireTimer;
-  final double _projectileSpeed = 0.02;
+  final double _projectileSpeed = projectileSpeed;
   final Random _random = Random();
 
 
@@ -120,13 +54,17 @@ class _GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
+    _ball = Ball(
+      position: const Offset(ballInitialX, ballInitialY),
+      velocity: const Offset(ballInitialDX, ballInitialDY),
+    );
     _createBlocks();
-    _timer = Timer.periodic(const Duration(milliseconds: 16), _updateBall);
+    _timer = Timer.periodic(frameDuration, _updateBall);
   }
 
   void _startMovingLeft() {
     _leftTimer?.cancel();
-    _leftTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+    _leftTimer = Timer.periodic(frameDuration, (_) {
       setState(() {
         _paddleX = (_paddleX - _paddleSpeed).clamp(0.0, 1.0);
       });
@@ -140,7 +78,7 @@ class _GameScreenState extends State<GameScreen> {
 
   void _startMovingRight() {
     _rightTimer?.cancel();
-    _rightTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+    _rightTimer = Timer.periodic(frameDuration, (_) {
       setState(() {
         _paddleX = (_paddleX + _paddleSpeed).clamp(0.0, 1.0);
       });
@@ -169,11 +107,10 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _createBlocks() {
-    const int rows = 4;
-    const int cols = 6;
-    const double spacing = 0.02;
-    const double topOffset = 0.1;
-    const double blockHeight = 0.05;
+    const int rows = blockRows;
+    const int cols = blockCols;
+    const double spacing = blockSpacing;
+    const double topOffset = blockTopOffset;
     final double blockWidth = (1 - (cols + 1) * spacing) / cols;
     const blockImages = [
       'assets/images/block_1.png',
@@ -197,31 +134,33 @@ class _GameScreenState extends State<GameScreen> {
 
   void _updateBall(Timer timer) {
     setState(() {
-      _ballX += _dx;
-      _ballY += _dy;
-      if (_ballX <= 0 || _ballX >= 1) {
-        _dx = -_dx;
-        _ballX = _ballX.clamp(0.0, 1.0);
+      _ball.update();
+      var pos = _ball.position;
+      var vel = _ball.velocity;
+      if (pos.dx <= 0 || pos.dx >= 1) {
+        vel = Offset(-vel.dx, vel.dy);
+        pos = Offset(pos.dx.clamp(0.0, 1.0), pos.dy);
       }
-      if (_ballY <= 0) {
-        _dy = -_dy;
-        _ballY = _ballY.clamp(0.0, 1.0);
+      if (pos.dy <= 0) {
+        vel = Offset(vel.dx, -vel.dy);
+        pos = Offset(pos.dx, pos.dy.clamp(0.0, 1.0));
       }
+      _ball
+        ..position = pos
+        ..velocity = vel;
 
       // simple paddle collision when moving downward
-      const double paddleY = 0.95; // approximate fractional vertical position
-      const double paddleHalfWidth = 0.1; // half the paddle width as fraction
-      if (_dy > 0 && _ballY >= paddleY &&
-          (_ballX - _paddleX).abs() <= paddleHalfWidth) {
-        _dy = -_dy;
-        _ballY = paddleY;
+      if (_ball.velocity.dy > 0 && _ball.position.dy >= paddleY &&
+          (_ball.position.dx - _paddleX).abs() <= paddleHalfWidth) {
+        _ball
+          ..velocity = Offset(_ball.velocity.dx, -_ball.velocity.dy)
+          ..position = Offset(_ball.position.dx, paddleY);
       }
 
       // check for collision with blocks
-      const double ballSize = 0.04;
       final ballRect = Rect.fromLTWH(
-        _ballX - ballSize / 2,
-        _ballY - ballSize / 2,
+        _ball.position.dx - ballSize / 2,
+        _ball.position.dy - ballSize / 2,
         ballSize,
         ballSize,
       );
@@ -231,30 +170,35 @@ class _GameScreenState extends State<GameScreen> {
         if (ballRect.overlaps(rect)) {
           if (!_activePowerUps.contains(PowerUpType.fireball)) {
             final intersection = ballRect.intersect(rect);
+            var vel = _ball.velocity;
+            var pos = _ball.position;
             if (intersection.height >= intersection.width) {
-              _dx = -_dx;
-              if (_dx > 0) {
-                _ballX = rect.left - ballSize / 2;
+              vel = Offset(-vel.dx, vel.dy);
+              if (vel.dx > 0) {
+                pos = Offset(rect.left - ballSize / 2, pos.dy);
               } else {
-                _ballX = rect.right + ballSize / 2;
+                pos = Offset(rect.right + ballSize / 2, pos.dy);
               }
             } else {
-              _dy = -_dy;
-              if (_dy > 0) {
-                _ballY = rect.top - ballSize / 2;
+              vel = Offset(vel.dx, -vel.dy);
+              if (vel.dy > 0) {
+                pos = Offset(pos.dx, rect.top - ballSize / 2);
               } else {
-                _ballY = rect.bottom + ballSize / 2;
+                pos = Offset(pos.dx, rect.bottom + ballSize / 2);
               }
             }
+            _ball
+              ..position = pos
+              ..velocity = vel;
           }
           if (block.hit()) {
             _blocks.removeAt(i);
             _score += 10;
-            if (_random.nextDouble() < 0.25) {
+            if (_random.nextDouble() < powerUpProbability) {
               final types = PowerUpType.values;
               final randomType = types[_random.nextInt(types.length)];
               _powerUps
-                  .add(_FallingPowerUp(type: randomType, position: rect.center));
+                  .add(FallingPowerUp(type: randomType, position: rect.center));
             }
           }
           break;
@@ -281,8 +225,11 @@ class _GameScreenState extends State<GameScreen> {
       for (int i = _projectiles.length - 1; i >= 0; i--) {
         final newPos = _projectiles[i].translate(0, -_projectileSpeed);
         bool remove = false;
-        final projRect =
-            Rect.fromLTWH(newPos.dx - 0.01, newPos.dy - 0.02, 0.02, 0.04);
+        final projRect = Rect.fromLTWH(
+            newPos.dx - projectileWidth / 2,
+            newPos.dy - projectileHeight / 2,
+            projectileWidth,
+            projectileHeight);
         for (int j = 0; j < _blocks.length; j++) {
           final block = _blocks[j];
           final rect = block.rect;
@@ -290,11 +237,11 @@ class _GameScreenState extends State<GameScreen> {
             if (block.hit()) {
               _blocks.removeAt(j);
               _score += 10;
-              if (_random.nextDouble() < 0.25) {
+              if (_random.nextDouble() < powerUpProbability) {
                 final types = PowerUpType.values;
                 final randomType = types[_random.nextInt(types.length)];
-                _powerUps.add(
-                    _FallingPowerUp(type: randomType, position: rect.center));
+                _powerUps
+                    .add(FallingPowerUp(type: randomType, position: rect.center));
               }
             }
             remove = true;
@@ -309,8 +256,8 @@ class _GameScreenState extends State<GameScreen> {
       }
     });
 
-    if (_ballY >= 1.0) {
-      _ballY = 1.0;
+    if (_ball.position.dy >= 1.0) {
+      _ball.position = Offset(_ball.position.dx, 1.0);
       _timer.cancel();
       _leftTimer?.cancel();
       _rightTimer?.cancel();
@@ -322,9 +269,12 @@ class _GameScreenState extends State<GameScreen> {
   void _activatePowerUp(PowerUpType type) {
     _activePowerUps.add(type);
     _timers[type]?.cancel();
-    _timers[type] = Timer(const Duration(seconds: 7), () {
+    _timers[type] = Timer(powerUpDuration, () {
       setState(() {
         _activePowerUps.remove(type);
+        if (type == PowerUpType.fireball && _ball is Fireball) {
+          _ball = (_ball as Fireball).ball;
+        }
         if (type == PowerUpType.gun) {
           _gunFireTimer?.cancel();
           _gunFireTimer = null;
@@ -334,14 +284,17 @@ class _GameScreenState extends State<GameScreen> {
     if (type == PowerUpType.gun) {
       _gunFireTimer?.cancel();
       _gunFireTimer =
-          Timer.periodic(const Duration(milliseconds: 500), (_) => _fireProjectile());
+          Timer.periodic(gunFireInterval, (_) => _fireProjectile());
+    }
+    if (type == PowerUpType.fireball) {
+      _ball = Fireball(_ball);
     }
     setState(() {});
   }
 
   void _fireProjectile() {
     setState(() {
-      _projectiles.add(Offset(_paddleX, 0.93));
+      _projectiles.add(Offset(_paddleX, projectileStartY));
     });
   }
 
@@ -354,11 +307,11 @@ class _GameScreenState extends State<GameScreen> {
     _rightTimer = null;
     _gunFireTimer = null;
     setState(() {
-      _ballX = 0.5;
-      _ballY = 0.9;
-      _dx = 0.01;
-      _dy = -0.01;
-      _paddleX = 0.5;
+      _ball = Ball(
+        position: const Offset(ballInitialX, ballInitialY),
+        velocity: const Offset(ballInitialDX, ballInitialDY),
+      );
+      _paddleX = paddleInitialX;
       _score = 0;
       _activePowerUps.clear();
       for (final timer in _timers.values) {
@@ -370,7 +323,7 @@ class _GameScreenState extends State<GameScreen> {
       _projectiles.clear();
       _createBlocks();
     });
-    _timer = Timer.periodic(const Duration(milliseconds: 16), _updateBall);
+    _timer = Timer.periodic(frameDuration, _updateBall);
   }
 
   void _showGameOverDialog() {
@@ -437,18 +390,18 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               for (final p in _powerUps)
                 Positioned(
-                  left: (p.position.dx - 0.025) * width,
-                  top: (p.position.dy - 0.025) * height,
-                  width: 0.05 * width,
-                  height: 0.05 * height,
-                  child: Image.asset(_powerUpImage(p.type)),
+                  left: (p.position.dx - powerUpSize / 2) * width,
+                  top: (p.position.dy - powerUpSize / 2) * height,
+                  width: powerUpSize * width,
+                  height: powerUpSize * height,
+                  child: Image.asset(powerUpImage(p.type)),
                 ),
               for (final proj in _projectiles)
                 Positioned(
-                  left: (proj.dx - 0.01) * width,
-                  top: (proj.dy - 0.02) * height,
-                  width: 0.02 * width,
-                  height: 0.04 * height,
+                  left: (proj.dx - projectileWidth / 2) * width,
+                  top: (proj.dy - projectileHeight / 2) * height,
+                  width: projectileWidth * width,
+                  height: projectileHeight * height,
                   child: Image.asset('assets/images/projectile.png'),
                 ),
               Align(
@@ -463,7 +416,8 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
               Align(
-                alignment: Alignment(2 * _ballX - 1, 2 * _ballY - 1),
+                alignment:
+                    Alignment(2 * _ball.position.dx - 1, 2 * _ball.position.dy - 1),
                 child: Image.asset(
                   _activePowerUps.contains(PowerUpType.fireball)
                       ? 'assets/images/ball_on_fire.png'

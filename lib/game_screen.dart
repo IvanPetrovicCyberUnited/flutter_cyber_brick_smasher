@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -10,6 +9,31 @@ class GameScreen extends StatefulWidget {
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
+
+
+enum PowerUpType { fireball, magnet, multiball, phaseball, gun }
+
+String _powerUpImage(PowerUpType type) {
+  switch (type) {
+    case PowerUpType.fireball:
+      return 'assets/images/powerup_fireball.png';
+    case PowerUpType.magnet:
+      return 'assets/images/powerup_magnet.png';
+    case PowerUpType.multiball:
+      return 'assets/images/powerup_multiball.png';
+    case PowerUpType.phaseball:
+      return 'assets/images/powerup_phaseball.png';
+    case PowerUpType.gun:
+      return 'assets/images/powerup_gun.png';
+  }
+}
+
+class _FallingPowerUp {
+  _FallingPowerUp({required this.type, required this.position});
+  PowerUpType type;
+  Offset position;
+}
+
 
 class _GameScreenState extends State<GameScreen> {
   late Timer _timer;
@@ -26,8 +50,9 @@ class _GameScreenState extends State<GameScreen> {
 
   final List<Rect> _blocks = [];
   int _score = 0;
-  final List<Offset> _powerUps = [];
-  bool _fireballMode = false;
+  final List<_FallingPowerUp> _powerUps = [];
+  final Set<PowerUpType> _activePowerUps = {};
+  final Map<PowerUpType, Timer> _timers = {};
   final double _powerUpSpeed = 0.01;
 
   @override
@@ -114,7 +139,7 @@ class _GameScreenState extends State<GameScreen> {
       for (int i = 0; i < _blocks.length; i++) {
         final block = _blocks[i];
         if (ballRect.overlaps(block)) {
-          if (!_fireballMode) {
+          if (!_activePowerUps.contains(PowerUpType.fireball)) {
             final intersection = ballRect.intersect(block);
             if (intersection.height >= intersection.width) {
               _dx = -_dx;
@@ -135,7 +160,9 @@ class _GameScreenState extends State<GameScreen> {
           _blocks.removeAt(i);
           _score += 10;
           if (Random().nextDouble() < 0.25) {
-            _powerUps.add(block.center);
+            final types = PowerUpType.values;
+            final randomType = types[Random().nextInt(types.length)];
+            _powerUps.add(_FallingPowerUp(type: randomType, position: block.center));
           }
           break;
         }
@@ -143,17 +170,18 @@ class _GameScreenState extends State<GameScreen> {
 
       // update power-ups
       for (int i = _powerUps.length - 1; i >= 0; i--) {
-        final pos = _powerUps[i].translate(0, _powerUpSpeed);
-        if (pos.dy >= 1.0) {
+        final p = _powerUps[i];
+        final newPos = p.position.translate(0, _powerUpSpeed);
+        if (newPos.dy >= 1.0) {
           _powerUps.removeAt(i);
           continue;
         }
-        if (pos.dy >= paddleY && (pos.dx - _paddleX).abs() <= paddleHalfWidth) {
+        if (newPos.dy >= paddleY && (newPos.dx - _paddleX).abs() <= paddleHalfWidth) {
           _powerUps.removeAt(i);
-          _fireballMode = true;
+          _activatePowerUp(p.type);
           continue;
         }
-        _powerUps[i] = pos;
+        p.position = newPos;
       }
     });
 
@@ -164,6 +192,17 @@ class _GameScreenState extends State<GameScreen> {
       _rightTimer?.cancel();
       _showGameOverDialog();
     }
+  }
+
+  void _activatePowerUp(PowerUpType type) {
+    _activePowerUps.add(type);
+    _timers[type]?.cancel();
+    _timers[type] = Timer(const Duration(seconds: 7), () {
+      setState(() {
+        _activePowerUps.remove(type);
+      });
+    });
+    setState(() {});
   }
 
   void _resetGame() {
@@ -179,7 +218,11 @@ class _GameScreenState extends State<GameScreen> {
       _dy = -0.01;
       _paddleX = 0.5;
       _score = 0;
-      _fireballMode = false;
+      _activePowerUps.clear();
+      for (final timer in _timers.values) {
+        timer.cancel();
+      }
+      _timers.clear();
       _blocks.clear();
       _powerUps.clear();
       _createBlocks();
@@ -242,11 +285,11 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               for (final p in _powerUps)
                 Positioned(
-                  left: (p.dx - 0.025) * width,
-                  top: (p.dy - 0.025) * height,
+                  left: (p.position.dx - 0.025) * width,
+                  top: (p.position.dy - 0.025) * height,
                   width: 0.05 * width,
                   height: 0.05 * height,
-                  child: Image.asset('assets/images/powerup_fireball.png'),
+                  child: Image.asset(_powerUpImage(p.type)),
                 ),
               Align(
                 alignment: Alignment(2 * _paddleX - 1, 1),
@@ -258,7 +301,8 @@ class _GameScreenState extends State<GameScreen> {
               Align(
                 alignment: Alignment(2 * _ballX - 1, 2 * _ballY - 1),
                 child: Image.asset(
-                  _fireballMode
+
+                  _activePowerUps.contains(PowerUpType.fireball)
                       ? 'assets/images/ball_on_fire.png'
                       : 'assets/images/ball.png',
                 ),

@@ -12,6 +12,7 @@ import '../models/normal_block.dart';
 import '../models/power_up.dart';
 import '../models/special_block.dart';
 import '../models/unbreakable_block.dart';
+import '../factories/level_factory.dart';
 import '../utils/constants.dart';
 
 class GameViewModel extends ChangeNotifier {
@@ -43,6 +44,10 @@ class GameViewModel extends ChangeNotifier {
   final Set<PowerUpType> activePowerUps = {};
   final Map<PowerUpType, Timer> _timers = {};
   final List<Offset> projectiles = [];
+
+  /// Returns true when all breakable blocks have been destroyed.
+  bool get levelComplete =>
+      blocks.every((b) => b.hitPoints == -1);
 
   void handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
@@ -125,29 +130,37 @@ class GameViewModel extends ChangeNotifier {
   }
 
   void _createBlocks() {
-    const int rows = blockRows;
-    const int cols = blockCols;
-    const double spacing = blockSpacing;
-    const double topOffset = blockTopOffset;
-    final double blockWidth = (1 - (cols + 1) * spacing) / cols;
+    blocks.clear();
     const blockImages = [
       'assets/images/block_1.png',
       'assets/images/block_2.png',
       'assets/images/block_3.png',
       'assets/images/block_4.png',
     ];
-    for (int r = 0; r < rows; r++) {
-      for (int c = 0; c < cols; c++) {
-        final double x = spacing + c * (blockWidth + spacing);
-        final double y = topOffset + r * (blockHeight + spacing);
-        final image = blockImages[_random.nextInt(blockImages.length)];
-        blocks.add(
-          NormalBlock(
-            position: Offset(x, y),
-            size: Size(blockWidth, blockHeight),
+
+    final level = LevelFactory.createLevel(1);
+    for (final descriptor in level.blocks) {
+      switch (descriptor.type) {
+        case 'normal':
+          final image = blockImages[_random.nextInt(blockImages.length)];
+          blocks.add(NormalBlock(
+            position: descriptor.position,
+            size: descriptor.size,
             image: image,
-          ),
-        );
+          ));
+          break;
+        case 'special':
+          blocks.add(SpecialBlock(
+            position: descriptor.position,
+            size: descriptor.size,
+          ));
+          break;
+        case 'unbreakable':
+          blocks.add(UnbreakableBlock(
+            position: descriptor.position,
+            size: descriptor.size,
+          ));
+          break;
       }
     }
   }

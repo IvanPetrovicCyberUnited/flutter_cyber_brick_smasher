@@ -108,8 +108,23 @@ class _GameScreenState extends State<GameScreen> {
       for (int i = 0; i < _blocks.length; i++) {
         final block = _blocks[i];
         if (ballRect.overlaps(block)) {
+          final intersection = ballRect.intersect(block);
+          if (intersection.height >= intersection.width) {
+            _dx = -_dx;
+            if (_dx > 0) {
+              _ballX = block.left - ballSize / 2;
+            } else {
+              _ballX = block.right + ballSize / 2;
+            }
+          } else {
+            _dy = -_dy;
+            if (_dy > 0) {
+              _ballY = block.top - ballSize / 2;
+            } else {
+              _ballY = block.bottom + ballSize / 2;
+            }
+          }
           _blocks.removeAt(i);
-          _dy = -_dy;
           break;
         }
       }

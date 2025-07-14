@@ -35,6 +35,57 @@ class _FallingPowerUp {
   Offset position;
 }
 
+abstract class Block {
+  Block({required this.position, required this.size, required this.hitPoints});
+
+  Offset position;
+  Size size;
+  int hitPoints;
+
+  Rect get rect => Rect.fromLTWH(position.dx, position.dy, size.width, size.height);
+
+  String get imagePath;
+
+  /// Returns true if the block is destroyed after this hit.
+  bool hit() {
+    if (hitPoints > 0) {
+      hitPoints--;
+    }
+    return hitPoints <= 0;
+  }
+}
+
+class NormalBlock extends Block {
+  NormalBlock({required super.position, required super.size, required String image})
+      : _imagePath = image,
+        super(hitPoints: 1);
+
+  final String _imagePath;
+
+  @override
+  String get imagePath => _imagePath;
+}
+
+class UnbreakableBlock extends Block {
+  UnbreakableBlock({required super.position, required super.size})
+      : super(hitPoints: -1);
+
+  @override
+  bool hit() => false;
+
+  @override
+  String get imagePath => 'assets/images/block_5.png';
+}
+
+class SpecialBlock extends Block {
+  SpecialBlock({required super.position, required super.size}) : super(hitPoints: 2);
+
+  @override
+  String get imagePath => hitPoints == 2
+      ? 'assets/images/special_block_intact.png'
+      : 'assets/images/special_block_damaged.png';
+}
+
 class _GameScreenState extends State<GameScreen> {
   late Timer _timer;
   Timer? _leftTimer;
@@ -50,7 +101,7 @@ class _GameScreenState extends State<GameScreen> {
   double _paddleX = 0.5; // fractional position of paddle across width
   final double _paddleSpeed = 0.02;
 
-  final List<Rect> _blocks = [];
+  final List<Block> _blocks = [];
   int _score = 0;
   final List<_FallingPowerUp> _powerUps = [];
   final Set<PowerUpType> _activePowerUps = {};
@@ -124,11 +175,22 @@ class _GameScreenState extends State<GameScreen> {
     const double topOffset = 0.1;
     const double blockHeight = 0.05;
     final double blockWidth = (1 - (cols + 1) * spacing) / cols;
+    const blockImages = [
+      'assets/images/block_1.png',
+      'assets/images/block_2.png',
+      'assets/images/block_3.png',
+      'assets/images/block_4.png',
+    ];
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < cols; c++) {
         final double x = spacing + c * (blockWidth + spacing);
         final double y = topOffset + r * (blockHeight + spacing);
-        _blocks.add(Rect.fromLTWH(x, y, blockWidth, blockHeight));
+        final image = blockImages[_random.nextInt(blockImages.length)];
+        _blocks.add(NormalBlock(
+          position: Offset(x, y),
+          size: Size(blockWidth, blockHeight),
+          image: image,
+        ));
       }
     }
   }
@@ -165,31 +227,35 @@ class _GameScreenState extends State<GameScreen> {
       );
       for (int i = 0; i < _blocks.length; i++) {
         final block = _blocks[i];
-        if (ballRect.overlaps(block)) {
+        final rect = block.rect;
+        if (ballRect.overlaps(rect)) {
           if (!_activePowerUps.contains(PowerUpType.fireball)) {
-            final intersection = ballRect.intersect(block);
+            final intersection = ballRect.intersect(rect);
             if (intersection.height >= intersection.width) {
               _dx = -_dx;
               if (_dx > 0) {
-                _ballX = block.left - ballSize / 2;
+                _ballX = rect.left - ballSize / 2;
               } else {
-                _ballX = block.right + ballSize / 2;
+                _ballX = rect.right + ballSize / 2;
               }
             } else {
               _dy = -_dy;
               if (_dy > 0) {
-                _ballY = block.top - ballSize / 2;
+                _ballY = rect.top - ballSize / 2;
               } else {
-                _ballY = block.bottom + ballSize / 2;
+                _ballY = rect.bottom + ballSize / 2;
               }
             }
           }
-          _blocks.removeAt(i);
-          _score += 10;
-          if (_random.nextDouble() < 0.25) {
-            final types = PowerUpType.values;
-            final randomType = types[_random.nextInt(types.length)];
-            _powerUps.add(_FallingPowerUp(type: randomType, position: block.center));
+          if (block.hit()) {
+            _blocks.removeAt(i);
+            _score += 10;
+            if (_random.nextDouble() < 0.25) {
+              final types = PowerUpType.values;
+              final randomType = types[_random.nextInt(types.length)];
+              _powerUps
+                  .add(_FallingPowerUp(type: randomType, position: rect.center));
+            }
           }
           break;
         }
@@ -219,14 +285,17 @@ class _GameScreenState extends State<GameScreen> {
             Rect.fromLTWH(newPos.dx - 0.01, newPos.dy - 0.02, 0.02, 0.04);
         for (int j = 0; j < _blocks.length; j++) {
           final block = _blocks[j];
-          if (projRect.overlaps(block)) {
-            _blocks.removeAt(j);
-            _score += 10;
-            if (_random.nextDouble() < 0.25) {
-              final types = PowerUpType.values;
-              final randomType = types[_random.nextInt(types.length)];
-              _powerUps
-                  .add(_FallingPowerUp(type: randomType, position: block.center));
+          final rect = block.rect;
+          if (projRect.overlaps(rect)) {
+            if (block.hit()) {
+              _blocks.removeAt(j);
+              _score += 10;
+              if (_random.nextDouble() < 0.25) {
+                final types = PowerUpType.values;
+                final randomType = types[_random.nextInt(types.length)];
+                _powerUps.add(
+                    _FallingPowerUp(type: randomType, position: rect.center));
+              }
             }
             remove = true;
             break;
@@ -360,11 +429,11 @@ class _GameScreenState extends State<GameScreen> {
               ),
               for (final block in _blocks)
                 Positioned(
-                  left: block.left * width,
-                  top: block.top * height,
-                  width: block.width * width,
-                  height: block.height * height,
-                  child: Image.asset('assets/images/block_1.png'),
+                  left: block.position.dx * width,
+                  top: block.position.dy * height,
+                  width: block.size.width * width,
+                  height: block.size.height * height,
+                  child: Image.asset(block.imagePath),
                 ),
               for (final p in _powerUps)
                 Positioned(

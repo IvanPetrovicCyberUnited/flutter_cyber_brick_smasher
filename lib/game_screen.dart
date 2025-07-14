@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -34,11 +36,12 @@ class _FallingPowerUp {
   Offset position;
 }
 
-
 class _GameScreenState extends State<GameScreen> {
   late Timer _timer;
   Timer? _leftTimer;
   Timer? _rightTimer;
+  late FocusNode _focusNode;
+
 
   double _ballX = 0.5; // fractional position across the width
   double _ballY = 0.9; // fractional position down the screen
@@ -58,6 +61,11 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
+
     _createBlocks();
     _timer = Timer.periodic(const Duration(milliseconds: 16), _updateBall);
   }
@@ -88,6 +96,22 @@ class _GameScreenState extends State<GameScreen> {
   void _stopMovingRight() {
     _rightTimer?.cancel();
     _rightTimer = null;
+  }
+
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        if (_leftTimer == null) _startMovingLeft();
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        if (_rightTimer == null) _startMovingRight();
+      }
+    } else if (event is RawKeyUpEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        _stopMovingLeft();
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        _stopMovingRight();
+      }
+    }
   }
 
   void _createBlocks() {
@@ -257,6 +281,7 @@ class _GameScreenState extends State<GameScreen> {
     _timer.cancel();
     _leftTimer?.cancel();
     _rightTimer?.cancel();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -268,8 +293,11 @@ class _GameScreenState extends State<GameScreen> {
         builder: (context, constraints) {
           final width = constraints.maxWidth;
           final height = constraints.maxHeight;
-          return Stack(
-            children: [
+          return RawKeyboardListener(
+            focusNode: _focusNode,
+            onKey: _handleKeyEvent,
+            child: Stack(
+              children: [
               Positioned(
                 left: 8,
                 top: 8,
@@ -301,7 +329,6 @@ class _GameScreenState extends State<GameScreen> {
               Align(
                 alignment: Alignment(2 * _ballX - 1, 2 * _ballY - 1),
                 child: Image.asset(
-
                   _activePowerUps.contains(PowerUpType.fireball)
                       ? 'assets/images/ball_on_fire.png'
                       : 'assets/images/ball.png',
@@ -330,6 +357,8 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
             ],
+
+          ),
           );
         },
       ),

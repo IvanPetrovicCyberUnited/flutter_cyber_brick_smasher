@@ -17,7 +17,7 @@ class _GameScreenState extends State<GameScreen> {
   double _ballX = 0.5; // fractional position across the width
   double _ballY = 0.9; // fractional position down the screen
   double _dx = 0.01;
-  final double _dy = -0.01; // move upward slightly
+  double _dy = -0.01; // move upward slightly
 
   double _paddleX = 0.5; // fractional position of paddle across width
   final double _paddleSpeed = 0.02;
@@ -60,9 +60,37 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       _ballX += _dx;
       _ballY += _dy;
+
+      // Wände
       if (_ballX <= 0 || _ballX >= 1) {
         _dx = -_dx;
         _ballX = _ballX.clamp(0.0, 1.0);
+      }
+
+      // Oben
+      if (_ballY <= 0) {
+        _dy = -_dy;
+        _ballY = _ballY.clamp(0.0, 1.0);
+      }
+
+      // Paddle-Kollision
+      final screenHeight = MediaQuery.of(context).size.height;
+      final paddleHeight = 16.0; // in px
+      final paddleY = 1.0 - (48 + paddleHeight) / screenHeight; // 48 = padding
+
+      final paddleWidthFraction =
+          64.0 / MediaQuery.of(context).size.width; // 64 px breit
+      final paddleLeft = _paddleX - paddleWidthFraction / 2;
+      final paddleRight = _paddleX + paddleWidthFraction / 2;
+
+      final ballRadius = 8.0 / MediaQuery.of(context).size.height; // 16x16 Ball
+      final ballBottom = _ballY + ballRadius;
+
+      if (_dy > 0 && // nur bei Abwärtsbewegung prüfen
+          ballBottom >= paddleY &&
+          _ballX >= paddleLeft &&
+          _ballX <= paddleRight) {
+        _dy = -_dy;
       }
     });
   }

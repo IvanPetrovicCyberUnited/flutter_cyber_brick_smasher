@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-
 import '../models/ball.dart';
 import '../models/ball_decorator.dart';
 import '../models/block.dart';
@@ -142,11 +141,13 @@ class GameViewModel extends ChangeNotifier {
         final double x = spacing + c * (blockWidth + spacing);
         final double y = topOffset + r * (blockHeight + spacing);
         final image = blockImages[_random.nextInt(blockImages.length)];
-        blocks.add(NormalBlock(
-          position: Offset(x, y),
-          size: const Size(blockWidth, blockHeight),
-          image: image,
-        ));
+        blocks.add(
+          NormalBlock(
+            position: Offset(x, y),
+            size: Size(blockWidth, blockHeight),
+            image: image,
+          ),
+        );
       }
     }
   }

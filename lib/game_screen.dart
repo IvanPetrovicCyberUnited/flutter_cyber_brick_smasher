@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class GameScreen extends StatefulWidget {
@@ -24,6 +26,9 @@ class _GameScreenState extends State<GameScreen> {
 
   final List<Rect> _blocks = [];
   int _score = 0;
+  final List<Offset> _powerUps = [];
+  bool _fireballMode = false;
+  final double _powerUpSpeed = 0.01;
 
   @override
   void initState() {
@@ -109,26 +114,46 @@ class _GameScreenState extends State<GameScreen> {
       for (int i = 0; i < _blocks.length; i++) {
         final block = _blocks[i];
         if (ballRect.overlaps(block)) {
-          final intersection = ballRect.intersect(block);
-          if (intersection.height >= intersection.width) {
-            _dx = -_dx;
-            if (_dx > 0) {
-              _ballX = block.left - ballSize / 2;
+          if (!_fireballMode) {
+            final intersection = ballRect.intersect(block);
+            if (intersection.height >= intersection.width) {
+              _dx = -_dx;
+              if (_dx > 0) {
+                _ballX = block.left - ballSize / 2;
+              } else {
+                _ballX = block.right + ballSize / 2;
+              }
             } else {
-              _ballX = block.right + ballSize / 2;
-            }
-          } else {
-            _dy = -_dy;
-            if (_dy > 0) {
-              _ballY = block.top - ballSize / 2;
-            } else {
-              _ballY = block.bottom + ballSize / 2;
+              _dy = -_dy;
+              if (_dy > 0) {
+                _ballY = block.top - ballSize / 2;
+              } else {
+                _ballY = block.bottom + ballSize / 2;
+              }
             }
           }
           _blocks.removeAt(i);
           _score += 10;
+          if (Random().nextDouble() < 0.25) {
+            _powerUps.add(block.center);
+          }
           break;
         }
+      }
+
+      // update power-ups
+      for (int i = _powerUps.length - 1; i >= 0; i--) {
+        final pos = _powerUps[i].translate(0, _powerUpSpeed);
+        if (pos.dy >= 1.0) {
+          _powerUps.removeAt(i);
+          continue;
+        }
+        if (pos.dy >= paddleY && (pos.dx - _paddleX).abs() <= paddleHalfWidth) {
+          _powerUps.removeAt(i);
+          _fireballMode = true;
+          continue;
+        }
+        _powerUps[i] = pos;
       }
     });
 
@@ -154,7 +179,9 @@ class _GameScreenState extends State<GameScreen> {
       _dy = -0.01;
       _paddleX = 0.5;
       _score = 0;
+      _fireballMode = false;
       _blocks.clear();
+      _powerUps.clear();
       _createBlocks();
     });
     _timer = Timer.periodic(const Duration(milliseconds: 16), _updateBall);
@@ -213,6 +240,14 @@ class _GameScreenState extends State<GameScreen> {
                   height: block.height * height,
                   child: Image.asset('assets/images/block_1.png'),
                 ),
+              for (final p in _powerUps)
+                Positioned(
+                  left: (p.dx - 0.025) * width,
+                  top: (p.dy - 0.025) * height,
+                  width: 0.05 * width,
+                  height: 0.05 * height,
+                  child: Image.asset('assets/images/powerup_fireball.png'),
+                ),
               Align(
                 alignment: Alignment(2 * _paddleX - 1, 1),
                 child: Padding(
@@ -222,7 +257,11 @@ class _GameScreenState extends State<GameScreen> {
               ),
               Align(
                 alignment: Alignment(2 * _ballX - 1, 2 * _ballY - 1),
-                child: Image.asset('assets/images/ball.png'),
+                child: Image.asset(
+                  _fireballMode
+                      ? 'assets/images/ball_on_fire.png'
+                      : 'assets/images/ball.png',
+                ),
               ),
               Align(
                 alignment: Alignment.bottomLeft,

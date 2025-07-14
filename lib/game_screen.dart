@@ -96,6 +96,23 @@ class _GameScreenState extends State<GameScreen> {
         _dy = -_dy;
         _ballY = paddleY;
       }
+
+      // check for collision with blocks
+      const double ballSize = 0.04;
+      final ballRect = Rect.fromLTWH(
+        _ballX - ballSize / 2,
+        _ballY - ballSize / 2,
+        ballSize,
+        ballSize,
+      );
+      for (int i = 0; i < _blocks.length; i++) {
+        final block = _blocks[i];
+        if (ballRect.overlaps(block)) {
+          _blocks.removeAt(i);
+          _dy = -_dy;
+          break;
+        }
+      }
     });
   }
 

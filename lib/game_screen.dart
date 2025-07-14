@@ -11,6 +11,7 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
+
 enum PowerUpType { fireball, magnet, multiball, phaseball, gun }
 
 String _powerUpImage(PowerUpType type) {
@@ -40,6 +41,7 @@ class _GameScreenState extends State<GameScreen> {
   Timer? _rightTimer;
   late FocusNode _focusNode;
 
+
   double _ballX = 0.5; // fractional position across the width
   double _ballY = 0.9; // fractional position down the screen
   double _dx = 0.01;
@@ -57,6 +59,7 @@ class _GameScreenState extends State<GameScreen> {
   final List<Offset> _projectiles = [];
   Timer? _gunFireTimer;
   final double _projectileSpeed = 0.02;
+
 
   @override
   void initState() {

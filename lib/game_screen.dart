@@ -331,6 +331,10 @@ class _GameScreenState extends State<GameScreen> {
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     _gunFireTimer?.cancel();
+    for (final timer in _timers.values) {
+      timer.cancel();
+    }
+    _timers.clear();
     _focusNode.dispose();
     super.dispose();
   }

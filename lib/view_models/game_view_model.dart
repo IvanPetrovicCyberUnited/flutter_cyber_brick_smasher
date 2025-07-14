@@ -15,6 +15,8 @@ import '../models/unbreakable_block.dart';
 import '../factories/level_factory.dart';
 import '../utils/constants.dart';
 
+enum GameState { playing, levelCompleted, gameFinished }
+
 class GameViewModel extends ChangeNotifier {
   GameViewModel({this.onGameOver}) {
     _focusNode = FocusNode();
@@ -29,7 +31,7 @@ class GameViewModel extends ChangeNotifier {
   late FocusNode _focusNode;
   FocusNode get focusNode => _focusNode;
 
-  late Timer _gameTimer;
+  Timer? _gameTimer;
   Timer? _leftTimer;
   Timer? _rightTimer;
   Timer? _gunFireTimer;
@@ -37,6 +39,12 @@ class GameViewModel extends ChangeNotifier {
   final Random _random = Random();
 
   late Ball ball;
+  int _currentLevel = 1;
+  static const int _maxLevel = 5;
+  GameState _state = GameState.playing;
+
+  int get currentLevel => _currentLevel;
+  GameState get state => _state;
   double paddleX = paddleInitialX;
   int score = 0;
   final List<Block> blocks = [];
@@ -97,27 +105,59 @@ class GameViewModel extends ChangeNotifier {
   }
 
   void resetGame() {
+    _gameTimer?.cancel();
+    _currentLevel = 1;
+    score = 0;
+    _setupLevel();
+    _gameTimer = Timer.periodic(frameDuration, _update);
+    notifyListeners();
+  }
+
+  void _completeLevel() {
+    _state = GameState.levelCompleted;
+    _gameTimer?.cancel();
+    _leftTimer?.cancel();
+    _rightTimer?.cancel();
+    _gunFireTimer?.cancel();
+    notifyListeners();
+    Future.delayed(const Duration(seconds: 2), () {
+      if (_state != GameState.levelCompleted) return;
+      if (_currentLevel >= _maxLevel) {
+        _state = GameState.gameFinished;
+        notifyListeners();
+        return;
+      }
+      _currentLevel++;
+      _setupLevel();
+      _gameTimer = Timer.periodic(frameDuration, _update);
+      notifyListeners();
+    });
+  }
+
+  void _setupLevel() {
     ball = Ball(
       position: const Offset(ballInitialX, ballInitialY),
       velocity: const Offset(ballInitialDX, ballInitialDY),
     );
     paddleX = paddleInitialX;
-    score = 0;
     activePowerUps.clear();
+    powerUps.clear();
+    projectiles.clear();
     for (final timer in _timers.values) {
       timer.cancel();
     }
     _timers.clear();
+    _gunFireTimer?.cancel();
+    _leftTimer?.cancel();
+    _rightTimer?.cancel();
     blocks.clear();
-    powerUps.clear();
-    projectiles.clear();
     _createBlocks();
-    notifyListeners();
+    _state = GameState.playing;
   }
 
   @override
   void dispose() {
-    _gameTimer.cancel();
+    _gameTimer?.cancel();
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     _gunFireTimer?.cancel();
@@ -137,8 +177,7 @@ class GameViewModel extends ChangeNotifier {
       'assets/images/block_3.png',
       'assets/images/block_4.png',
     ];
-
-    final level = LevelFactory.createLevel(1);
+    final level = LevelFactory.createLevel(_currentLevel);
     for (final descriptor in level.blocks) {
       switch (descriptor.type) {
         case 'normal':
@@ -166,6 +205,7 @@ class GameViewModel extends ChangeNotifier {
   }
 
   void _update(Timer timer) {
+    if (_state != GameState.playing) return;
     ball.update();
     var pos = ball.position;
     var vel = ball.velocity;
@@ -284,11 +324,16 @@ class GameViewModel extends ChangeNotifier {
 
     if (ball.position.dy >= 1.0) {
       ball.position = Offset(ball.position.dx, 1.0);
-      _gameTimer.cancel();
+      _gameTimer?.cancel();
       _leftTimer?.cancel();
       _rightTimer?.cancel();
       _gunFireTimer?.cancel();
       onGameOver?.call();
+    }
+
+    if (levelComplete) {
+      _completeLevel();
+      return;
     }
     notifyListeners();
   }

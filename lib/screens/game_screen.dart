@@ -50,8 +50,15 @@ class _GameScreenState extends State<GameScreen> {
                 Positioned(
                   left: 8,
                   top: 8,
-                  child: Text('Score: ${_model.score}',
-                      style: const TextStyle(color: Colors.white)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Score: ${_model.score}',
+                          style: const TextStyle(color: Colors.white)),
+                      Text('Level: ${_model.currentLevel}',
+                          style: const TextStyle(color: Colors.white)),
+                    ],
+                  ),
                 ),
                 for (final block in _model.blocks)
                   Positioned(
@@ -118,7 +125,45 @@ class _GameScreenState extends State<GameScreen> {
                       onStop: _model.stopMovingRight,
                     ),
                   ),
-                ),
+
+                if (_model.state == GameState.levelCompleted)
+                  const Center(
+                    child: Text(
+                      'You Win',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                if (_model.state == GameState.gameFinished)
+                  Container(
+                    color: Colors.black54,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'You Win the Game',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Back to Start'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
               ],
             ),
           );

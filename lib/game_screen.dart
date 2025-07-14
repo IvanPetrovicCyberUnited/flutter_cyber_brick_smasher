@@ -10,6 +10,7 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
+
 enum PowerUpType { fireball, magnet, multiball, phaseball, gun }
 
 String _powerUpImage(PowerUpType type) {
@@ -32,6 +33,7 @@ class _FallingPowerUp {
   PowerUpType type;
   Offset position;
 }
+
 
 class _GameScreenState extends State<GameScreen> {
   late Timer _timer;
@@ -299,6 +301,7 @@ class _GameScreenState extends State<GameScreen> {
               Align(
                 alignment: Alignment(2 * _ballX - 1, 2 * _ballY - 1),
                 child: Image.asset(
+
                   _activePowerUps.contains(PowerUpType.fireball)
                       ? 'assets/images/ball_on_fire.png'
                       : 'assets/images/ball.png',

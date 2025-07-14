@@ -35,6 +35,7 @@ class GameViewModel extends ChangeNotifier {
   Timer? _leftTimer;
   Timer? _rightTimer;
   Timer? _gunFireTimer;
+  Timer? _levelTransitionTimer;
 
   final Random _random = Random();
 
@@ -106,6 +107,7 @@ class GameViewModel extends ChangeNotifier {
 
   void resetGame() {
     _gameTimer?.cancel();
+    _levelTransitionTimer?.cancel();
     _currentLevel = 1;
     score = 0;
     _setupLevel();
@@ -120,8 +122,10 @@ class GameViewModel extends ChangeNotifier {
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     _gunFireTimer?.cancel();
+    _levelTransitionTimer?.cancel();
     notifyListeners();
-    Future.delayed(const Duration(seconds: 2), () {
+    _levelTransitionTimer?.cancel();
+    _levelTransitionTimer = Timer(const Duration(seconds: 2), () {
       if (_state != GameState.levelCompleted) return;
       if (_currentLevel >= _maxLevel) {
         _state = GameState.gameFinished;
@@ -162,6 +166,7 @@ class GameViewModel extends ChangeNotifier {
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     _gunFireTimer?.cancel();
+    _levelTransitionTimer?.cancel();
     for (final timer in _timers.values) {
       timer.cancel();
     }

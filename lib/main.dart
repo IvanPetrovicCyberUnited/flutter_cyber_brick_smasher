@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'game_screen.dart';
+import 'screens/start_screen.dart';
 
 void main() {
   runApp(const CyberBrickSmasherApp());
@@ -18,23 +18,3 @@ class CyberBrickSmasherApp extends StatelessWidget {
   }
 }
 
-class StartScreen extends StatelessWidget {
-  const StartScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Cyber Brick Smasher')),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const GameScreen()),
-            );
-          },
-          child: const Text('Start Game'),
-        ),
-      ),
-    );
-  }
-}

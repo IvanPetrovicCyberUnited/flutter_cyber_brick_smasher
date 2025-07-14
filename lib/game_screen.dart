@@ -16,6 +16,14 @@ class GameScreen extends StatelessWidget {
               child: Image.asset('assets/images/paddle.png'),
             ),
           ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 56.0),
+              child: Image.asset('assets/images/ball.png'),
+            ),
+          ),
+
         ],
       ),
     );

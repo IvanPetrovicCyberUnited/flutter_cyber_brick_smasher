@@ -137,6 +137,7 @@ class GameViewModel extends ChangeNotifier {
       'assets/images/block_3.png',
       'assets/images/block_4.png',
     ];
+
     final level = LevelFactory.createLevel(1);
     for (final descriptor in level.blocks) {
       switch (descriptor.type) {

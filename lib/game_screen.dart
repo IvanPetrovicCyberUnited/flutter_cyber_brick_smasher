@@ -131,6 +131,55 @@ class _GameScreenState extends State<GameScreen> {
         }
       }
     });
+
+    if (_ballY >= 1.0) {
+      _ballY = 1.0;
+      _timer.cancel();
+      _leftTimer?.cancel();
+      _rightTimer?.cancel();
+      _showGameOverDialog();
+    }
+  }
+
+  void _resetGame() {
+    _timer.cancel();
+    _leftTimer?.cancel();
+    _rightTimer?.cancel();
+    _leftTimer = null;
+    _rightTimer = null;
+    setState(() {
+      _ballX = 0.5;
+      _ballY = 0.9;
+      _dx = 0.01;
+      _dy = -0.01;
+      _paddleX = 0.5;
+      _score = 0;
+      _blocks.clear();
+      _createBlocks();
+    });
+    _timer = Timer.periodic(const Duration(milliseconds: 16), _updateBall);
+  }
+
+  void _showGameOverDialog() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Game Over'),
+          content: Text('Final Score: $_score'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _resetGame();
+              },
+              child: const Text('Restart'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

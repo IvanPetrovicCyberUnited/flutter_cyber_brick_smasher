@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
 
@@ -57,6 +56,10 @@ class _GameScreenState extends State<GameScreen> {
   final Set<PowerUpType> _activePowerUps = {};
   final Map<PowerUpType, Timer> _timers = {};
   final double _powerUpSpeed = 0.01;
+  final List<Offset> _projectiles = [];
+  Timer? _gunFireTimer;
+  final double _projectileSpeed = 0.02;
+
 
   @override
   void initState() {
@@ -65,7 +68,6 @@ class _GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
-
     _createBlocks();
     _timer = Timer.periodic(const Duration(milliseconds: 16), _updateBall);
   }
@@ -207,6 +209,34 @@ class _GameScreenState extends State<GameScreen> {
         }
         p.position = newPos;
       }
+
+      // update projectiles
+      for (int i = _projectiles.length - 1; i >= 0; i--) {
+        final newPos = _projectiles[i].translate(0, -_projectileSpeed);
+        bool remove = false;
+        final projRect =
+            Rect.fromLTWH(newPos.dx - 0.01, newPos.dy - 0.02, 0.02, 0.04);
+        for (int j = 0; j < _blocks.length; j++) {
+          final block = _blocks[j];
+          if (projRect.overlaps(block)) {
+            _blocks.removeAt(j);
+            _score += 10;
+            if (Random().nextDouble() < 0.25) {
+              final types = PowerUpType.values;
+              final randomType = types[Random().nextInt(types.length)];
+              _powerUps
+                  .add(_FallingPowerUp(type: randomType, position: block.center));
+            }
+            remove = true;
+            break;
+          }
+        }
+        if (remove || newPos.dy <= 0) {
+          _projectiles.removeAt(i);
+        } else {
+          _projectiles[i] = newPos;
+        }
+      }
     });
 
     if (_ballY >= 1.0) {
@@ -214,6 +244,7 @@ class _GameScreenState extends State<GameScreen> {
       _timer.cancel();
       _leftTimer?.cancel();
       _rightTimer?.cancel();
+      _gunFireTimer?.cancel();
       _showGameOverDialog();
     }
   }
@@ -224,17 +255,34 @@ class _GameScreenState extends State<GameScreen> {
     _timers[type] = Timer(const Duration(seconds: 7), () {
       setState(() {
         _activePowerUps.remove(type);
+        if (type == PowerUpType.gun) {
+          _gunFireTimer?.cancel();
+          _gunFireTimer = null;
+        }
       });
     });
+    if (type == PowerUpType.gun) {
+      _gunFireTimer?.cancel();
+      _gunFireTimer =
+          Timer.periodic(const Duration(milliseconds: 500), (_) => _fireProjectile());
+    }
     setState(() {});
+  }
+
+  void _fireProjectile() {
+    setState(() {
+      _projectiles.add(Offset(_paddleX, 0.93));
+    });
   }
 
   void _resetGame() {
     _timer.cancel();
     _leftTimer?.cancel();
     _rightTimer?.cancel();
+    _gunFireTimer?.cancel();
     _leftTimer = null;
     _rightTimer = null;
+    _gunFireTimer = null;
     setState(() {
       _ballX = 0.5;
       _ballY = 0.9;
@@ -249,6 +297,7 @@ class _GameScreenState extends State<GameScreen> {
       _timers.clear();
       _blocks.clear();
       _powerUps.clear();
+      _projectiles.clear();
       _createBlocks();
     });
     _timer = Timer.periodic(const Duration(milliseconds: 16), _updateBall);
@@ -281,6 +330,7 @@ class _GameScreenState extends State<GameScreen> {
     _timer.cancel();
     _leftTimer?.cancel();
     _rightTimer?.cancel();
+    _gunFireTimer?.cancel();
     _focusNode.dispose();
     super.dispose();
   }
@@ -319,11 +369,23 @@ class _GameScreenState extends State<GameScreen> {
                   height: 0.05 * height,
                   child: Image.asset(_powerUpImage(p.type)),
                 ),
+              for (final proj in _projectiles)
+                Positioned(
+                  left: (proj.dx - 0.01) * width,
+                  top: (proj.dy - 0.02) * height,
+                  width: 0.02 * width,
+                  height: 0.04 * height,
+                  child: Image.asset('assets/images/projectile.png'),
+                ),
               Align(
                 alignment: Alignment(2 * _paddleX - 1, 1),
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 48.0),
-                  child: Image.asset('assets/images/paddle.png'),
+                  child: Image.asset(
+                    _activePowerUps.contains(PowerUpType.gun)
+                        ? 'assets/images/paddle_with_gun.png'
+                        : 'assets/images/paddle.png',
+                  ),
                 ),
               ),
               Align(
@@ -357,7 +419,6 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ),
             ],
-
           ),
           );
         },

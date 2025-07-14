@@ -59,6 +59,7 @@ class _GameScreenState extends State<GameScreen> {
   final List<Offset> _projectiles = [];
   Timer? _gunFireTimer;
   final double _projectileSpeed = 0.02;
+  final Random _random = Random();
 
 
   @override
@@ -185,9 +186,9 @@ class _GameScreenState extends State<GameScreen> {
           }
           _blocks.removeAt(i);
           _score += 10;
-          if (Random().nextDouble() < 0.25) {
+          if (_random.nextDouble() < 0.25) {
             final types = PowerUpType.values;
-            final randomType = types[Random().nextInt(types.length)];
+            final randomType = types[_random.nextInt(types.length)];
             _powerUps.add(_FallingPowerUp(type: randomType, position: block.center));
           }
           break;
@@ -221,9 +222,9 @@ class _GameScreenState extends State<GameScreen> {
           if (projRect.overlaps(block)) {
             _blocks.removeAt(j);
             _score += 10;
-            if (Random().nextDouble() < 0.25) {
+            if (_random.nextDouble() < 0.25) {
               final types = PowerUpType.values;
-              final randomType = types[Random().nextInt(types.length)];
+              final randomType = types[_random.nextInt(types.length)];
               _powerUps
                   .add(_FallingPowerUp(type: randomType, position: block.center));
             }

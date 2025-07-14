@@ -23,6 +23,7 @@ class _GameScreenState extends State<GameScreen> {
   final double _paddleSpeed = 0.02;
 
   final List<Rect> _blocks = [];
+  int _score = 0;
 
   @override
   void initState() {
@@ -91,14 +92,12 @@ class _GameScreenState extends State<GameScreen> {
       // simple paddle collision when moving downward
       const double paddleY = 0.95; // approximate fractional vertical position
       const double paddleHalfWidth = 0.1; // half the paddle width as fraction
-      if (_dy > 0 &&
-          _ballY >= paddleY &&
+      if (_dy > 0 && _ballY >= paddleY &&
           (_ballX - _paddleX).abs() <= paddleHalfWidth) {
         _dy = -_dy;
         _ballY = paddleY;
       }
 
-      // check for collision with blocks
       // check for collision with blocks
       const double ballSize = 0.04;
       final ballRect = Rect.fromLTWH(
@@ -110,34 +109,24 @@ class _GameScreenState extends State<GameScreen> {
       for (int i = 0; i < _blocks.length; i++) {
         final block = _blocks[i];
         if (ballRect.overlaps(block)) {
-          final blockCenter = Offset(
-            block.left + block.width / 2,
-            block.top + block.height / 2,
-          );
-          final ballCenter = Offset(_ballX, _ballY);
-          final dx = (ballCenter.dx - blockCenter.dx).abs();
-          final dy = (ballCenter.dy - blockCenter.dy).abs();
-
-          // Entscheidender Unterschied: wo ist der Aufprall?
-          if (dx > dy) {
-            // horizontaler Treffer → Ball prallt seitlich ab
+          final intersection = ballRect.intersect(block);
+          if (intersection.height >= intersection.width) {
             _dx = -_dx;
-            if (ballCenter.dx < blockCenter.dx) {
+            if (_dx > 0) {
               _ballX = block.left - ballSize / 2;
             } else {
               _ballX = block.right + ballSize / 2;
             }
           } else {
-            // vertikaler Treffer → Ball prallt oben/unten ab
             _dy = -_dy;
-            if (ballCenter.dy < blockCenter.dy) {
+            if (_dy > 0) {
               _ballY = block.top - ballSize / 2;
             } else {
               _ballY = block.bottom + ballSize / 2;
             }
           }
-
           _blocks.removeAt(i);
+          _score += 10;
           break;
         }
       }
@@ -162,6 +151,11 @@ class _GameScreenState extends State<GameScreen> {
           final height = constraints.maxHeight;
           return Stack(
             children: [
+              Positioned(
+                left: 8,
+                top: 8,
+                child: Text('Score: $_score', style: const TextStyle(color: Colors.white)),
+              ),
               for (final block in _blocks)
                 Positioned(
                   left: block.left * width,

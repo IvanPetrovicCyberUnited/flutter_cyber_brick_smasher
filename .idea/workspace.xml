@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="6043237b-daf6-46df-a72c-6e73a8ea4789" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flutter_cyber_brick_smasher.iml" beforeDir="false" afterPath="$PROJECT_DIR$/flutter_cyber_brick_smasher.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/game_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/game_screen.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -79,7 +78,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1752507219915</updated>
-      <workItem from="1752507221129" duration="3060000" />
+      <workItem from="1752507221129" duration="5059000" />
     </task>
     <servers />
   </component>

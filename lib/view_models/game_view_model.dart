@@ -15,10 +15,10 @@ import '../models/unbreakable_block.dart';
 import '../factories/level_factory.dart';
 import '../utils/constants.dart';
 
-enum GameState { playing, levelCompleted, gameFinished }
+enum GameState { playing, levelCompleted, gameOver, gameFinished }
 
 class GameViewModel extends ChangeNotifier {
-  GameViewModel({this.onGameOver}) {
+  GameViewModel() {
     _focusNode = FocusNode();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
@@ -27,7 +27,6 @@ class GameViewModel extends ChangeNotifier {
     _gameTimer = Timer.periodic(frameDuration, _update);
   }
 
-  final VoidCallback? onGameOver;
   late FocusNode _focusNode;
   FocusNode get focusNode => _focusNode;
 
@@ -111,6 +110,7 @@ class GameViewModel extends ChangeNotifier {
     _currentLevel = 1;
     score = 0;
     _setupLevel();
+    _state = GameState.playing;
     _gameTimer = Timer.periodic(frameDuration, _update);
     _focusNode.requestFocus();
     notifyListeners();
@@ -137,6 +137,16 @@ class GameViewModel extends ChangeNotifier {
       _gameTimer = Timer.periodic(frameDuration, _update);
       notifyListeners();
     });
+  }
+
+  void _gameOver() {
+    _state = GameState.gameOver;
+    _gameTimer?.cancel();
+    _leftTimer?.cancel();
+    _rightTimer?.cancel();
+    _gunFireTimer?.cancel();
+    _levelTransitionTimer?.cancel();
+    notifyListeners();
   }
 
   void _setupLevel() {
@@ -330,11 +340,7 @@ class GameViewModel extends ChangeNotifier {
 
     if (ball.position.dy >= 1.0) {
       ball.position = Offset(ball.position.dx, 1.0);
-      _gameTimer?.cancel();
-      _leftTimer?.cancel();
-      _rightTimer?.cancel();
-      _gunFireTimer?.cancel();
-      onGameOver?.call();
+      _gameOver();
     }
 
     if (levelComplete) {

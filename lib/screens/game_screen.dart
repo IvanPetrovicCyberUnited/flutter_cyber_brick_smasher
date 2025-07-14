@@ -19,8 +19,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
-    _model = GameViewModel(onGameOver: _showGameOverDialog)
-      ..addListener(_onModelChanged);
+    _model = GameViewModel()..addListener(_onModelChanged);
   }
 
   void _onModelChanged() => setState(() {});
@@ -163,6 +162,30 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                     ),
                   ),
+                if (_model.state == GameState.gameOver)
+                  Container(
+                    color: Colors.black54,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Game Over',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _model.resetGame,
+                            child: const Text('Restart'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           );
@@ -192,23 +215,4 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  void _showGameOverDialog() {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Game Over'),
-        content: Text('Final Score: ${_model.score}'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _model.resetGame();
-            },
-            child: const Text('Restart'),
-          ),
-        ],
-      ),
-    );
-  }
 }

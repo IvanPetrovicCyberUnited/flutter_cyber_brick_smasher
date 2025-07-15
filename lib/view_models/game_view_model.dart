@@ -18,6 +18,7 @@ import '../strategies/ball_collision_strategy.dart';
 import '../strategies/default_bounce_strategy.dart';
 import '../strategies/fireball_collision_strategy.dart';
 
+
 enum GameState { playing, levelCompleted, gameOver, gameFinished }
 
 class GameViewModel extends ChangeNotifier {

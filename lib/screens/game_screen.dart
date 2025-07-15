@@ -5,6 +5,8 @@ import '../models/block.dart';
 import '../models/power_up.dart';
 import '../utils/constants.dart';
 import '../view_models/game_view_model.dart';
+import '../strategies/fireball_collision_strategy.dart';
+import '../strategies/phaseball_collision_strategy.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -98,10 +100,18 @@ class _GameScreenState extends State<GameScreen> {
                   alignment: Alignment(
                       2 * _model.ball.position.dx - 1,
                       2 * _model.ball.position.dy - 1),
-                  child: Image.asset(_model.activePowerUps
-                          .contains(PowerUpType.fireball)
-                      ? 'assets/images/ball_on_fire.png'
-                      : 'assets/images/ball.png'),
+                  child: Builder(
+                    builder: (_) {
+                      final strategy =
+                          _model._getCollisionStrategy(_model.activePowerUps);
+                      final image = strategy is FireballCollisionStrategy
+                          ? 'assets/images/ball_on_fire.png'
+                          : strategy is PhaseballCollisionStrategy
+                              ? 'assets/images/ball_phase.png'
+                              : 'assets/images/ball.png';
+                      return Image.asset(image);
+                    },
+                  ),
                 ),
                 Align(
                   alignment: Alignment.bottomLeft,

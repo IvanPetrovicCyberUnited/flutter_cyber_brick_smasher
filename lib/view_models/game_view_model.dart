@@ -42,7 +42,6 @@ class GameViewModel extends ChangeNotifier {
 
   final Random _random = Random();
 
-
   late Ball ball;
   int _currentLevel = 1;
   static const int _maxLevel = 5;
@@ -158,6 +157,7 @@ class GameViewModel extends ChangeNotifier {
       position: const Offset(ballInitialX, ballInitialY),
       velocity: const Offset(ballInitialDX, ballInitialDY),
     );
+    ballCollisionStrategy = DefaultBounceStrategy();
     paddleX = paddleInitialX;
     activePowerUps.clear();
     powerUps.clear();
@@ -404,6 +404,10 @@ class GameViewModel extends ChangeNotifier {
       activePowerUps.remove(type);
       if (type == PowerUpType.fireball && ball is Fireball) {
         ball = (ball as Fireball).ball;
+        ballCollisionStrategy = DefaultBounceStrategy();
+      }
+      if (type == PowerUpType.phaseball) {
+        ballCollisionStrategy = DefaultBounceStrategy();
       }
       if (type == PowerUpType.gun) {
         _gunFireTimer?.cancel();
@@ -417,6 +421,10 @@ class GameViewModel extends ChangeNotifier {
     }
     if (type == PowerUpType.fireball) {
       ball = Fireball(ball);
+      ballCollisionStrategy = FireballCollisionStrategy();
+    }
+    if (type == PowerUpType.phaseball) {
+      ballCollisionStrategy = PhaseballCollisionStrategy();
     }
     notifyListeners();
   }

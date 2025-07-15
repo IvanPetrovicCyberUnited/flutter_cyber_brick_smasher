@@ -54,8 +54,7 @@ class GameViewModel extends ChangeNotifier {
   final List<Offset> projectiles = [];
 
   /// Returns true when all breakable blocks have been destroyed.
-  bool get levelComplete =>
-      blocks.every((b) => b.hitPoints == -1);
+  bool get levelComplete => blocks.every((b) => b.hitPoints == -1);
 
   void handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
@@ -222,89 +221,114 @@ class GameViewModel extends ChangeNotifier {
 
   void _update(Timer timer) {
     if (_state != GameState.playing) return;
+
     ball.update();
     var pos = ball.position;
     var vel = ball.velocity;
+
+    // Wände
     if (pos.dx <= 0 || pos.dx >= 1) {
       vel = Offset(-vel.dx, vel.dy);
       pos = Offset(pos.dx.clamp(0.0, 1.0), pos.dy);
     }
+    // Oben
     if (pos.dy <= 0) {
       vel = Offset(vel.dx, -vel.dy);
       pos = Offset(pos.dx, pos.dy.clamp(0.0, 1.0));
     }
+
     ball
       ..position = pos
       ..velocity = vel;
 
-    if (ball.velocity.dy > 0 && ball.position.dy >= paddleY &&
+    // 🧠 Paddle-Kollision mit realistischer Reflexion
+    if (ball.velocity.dy > 0 &&
+        ball.position.dy >= paddleY &&
         (ball.position.dx - paddleX).abs() <= paddleHalfWidth) {
-      ball
-        ..velocity = Offset(ball.velocity.dx, -ball.velocity.dy)
-        ..position = Offset(ball.position.dx, paddleY);
+      final hitOffset = (ball.position.dx - paddleX) / paddleHalfWidth;
+      final clampedOffset = hitOffset.clamp(-1.0, 1.0);
+      const maxBounceAngle = 0.03;
+
+      final newDx = clampedOffset * maxBounceAngle;
+      final newDy = -ball.velocity.dy.abs();
+
+      ball.velocity = Offset(newDx, newDy);
+      ball.position = Offset(ball.position.dx, paddleY);
     }
 
+    // 🎯 Ball-zu-Block-Kollision
     final ballRect = Rect.fromLTWH(
       ball.position.dx - ballSize / 2,
       ball.position.dy - ballSize / 2,
       ballSize,
       ballSize,
     );
+
     for (int i = 0; i < blocks.length; i++) {
       final block = blocks[i];
       final rect = block.rect;
+
       if (ballRect.overlaps(rect)) {
         if (!activePowerUps.contains(PowerUpType.fireball)) {
           final intersection = ballRect.intersect(rect);
           var vel = ball.velocity;
           var pos = ball.position;
+
           if (intersection.height >= intersection.width) {
             vel = Offset(-vel.dx, vel.dy);
-            if (vel.dx > 0) {
-              pos = Offset(rect.left - ballSize / 2, pos.dy);
-            } else {
-              pos = Offset(rect.right + ballSize / 2, pos.dy);
-            }
+            pos = vel.dx > 0
+                ? Offset(rect.left - ballSize / 2, pos.dy)
+                : Offset(rect.right + ballSize / 2, pos.dy);
           } else {
             vel = Offset(vel.dx, -vel.dy);
-            if (vel.dy > 0) {
-              pos = Offset(pos.dx, rect.top - ballSize / 2);
-            } else {
-              pos = Offset(pos.dx, rect.bottom + ballSize / 2);
-            }
+            pos = vel.dy > 0
+                ? Offset(pos.dx, rect.top - ballSize / 2)
+                : Offset(pos.dx, rect.bottom + ballSize / 2);
           }
+
           ball
             ..position = pos
             ..velocity = vel;
         }
+
         if (block.hit()) {
           blocks.removeAt(i);
           score += 10;
+
           if (_random.nextDouble() < powerUpProbability) {
             final types = PowerUpType.values;
             final randomType = types[_random.nextInt(types.length)];
-            powerUps.add(FallingPowerUp(type: randomType, position: rect.center));
+            powerUps.add(FallingPowerUp(
+              type: randomType,
+              position: rect.center,
+            ));
           }
         }
         break;
       }
     }
 
+    // ⬇️ Powerups
     for (int i = powerUps.length - 1; i >= 0; i--) {
       final p = powerUps[i];
       final newPos = p.position.translate(0, powerUpSpeed);
+
       if (newPos.dy >= 1.0) {
         powerUps.removeAt(i);
         continue;
       }
-      if (newPos.dy >= paddleY && (newPos.dx - paddleX).abs() <= paddleHalfWidth) {
+
+      if (newPos.dy >= paddleY &&
+          (newPos.dx - paddleX).abs() <= paddleHalfWidth) {
         powerUps.removeAt(i);
         _activatePowerUp(p.type);
         continue;
       }
+
       p.position = newPos;
     }
 
+    // 🔫 Projektile
     for (int i = projectiles.length - 1; i >= 0; i--) {
       final newPos = projectiles[i].translate(0, -projectileSpeed);
       bool remove = false;
@@ -314,23 +338,31 @@ class GameViewModel extends ChangeNotifier {
         projectileWidth,
         projectileHeight,
       );
+
       for (int j = 0; j < blocks.length; j++) {
         final block = blocks[j];
         final rect = block.rect;
+
         if (projRect.overlaps(rect)) {
           if (block.hit()) {
             blocks.removeAt(j);
             score += 10;
+
             if (_random.nextDouble() < powerUpProbability) {
               final types = PowerUpType.values;
               final randomType = types[_random.nextInt(types.length)];
-              powerUps.add(FallingPowerUp(type: randomType, position: rect.center));
+              powerUps.add(FallingPowerUp(
+                type: randomType,
+                position: rect.center,
+              ));
             }
           }
+
           remove = true;
           break;
         }
       }
+
       if (remove || newPos.dy <= 0) {
         projectiles.removeAt(i);
       } else {
@@ -338,15 +370,18 @@ class GameViewModel extends ChangeNotifier {
       }
     }
 
+    // 🧱 Unten raus
     if (ball.position.dy >= 1.0) {
       ball.position = Offset(ball.position.dx, 1.0);
       _gameOver();
     }
 
+    // 🎉 Level komplett
     if (levelComplete) {
       _completeLevel();
       return;
     }
+
     notifyListeners();
   }
 

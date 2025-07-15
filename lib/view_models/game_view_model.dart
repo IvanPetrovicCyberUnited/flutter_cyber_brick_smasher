@@ -42,6 +42,9 @@ class GameViewModel extends ChangeNotifier {
 
   final Random _random = Random();
 
+  /// Strategy used to resolve collisions between the ball and blocks.
+  late BallCollisionStrategy ballCollisionStrategy;
+
   late Ball ball;
   int _currentLevel = 1;
   static const int _maxLevel = 5;

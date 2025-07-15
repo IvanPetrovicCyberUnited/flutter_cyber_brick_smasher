@@ -13,6 +13,7 @@ class PhaseballCollisionStrategy implements BallCollisionStrategy {
   }) {
     return BallCollisionResult(
       newVelocity: velocity,
+      newPosition: ballRect.center,
       destroyBlock: false,
       passThrough: true,
     );

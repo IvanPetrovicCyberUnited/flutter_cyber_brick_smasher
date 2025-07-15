@@ -309,7 +309,7 @@ class GameViewModel extends ChangeNotifier {
         );
 
         var vel = result.newVelocity;
-        var pos = ball.position;
+        var pos = result.newPosition;
         final clampedBlock = PhysicsHelper.clampVelocity(
           Vector2(vel.dx, vel.dy),
           minBallSpeed,
@@ -317,19 +317,7 @@ class GameViewModel extends ChangeNotifier {
         );
         vel = Offset(clampedBlock.x, clampedBlock.y);
 
-        if (!result.passThrough) {
-          final intersection = ballRect.intersect(rect);
-
-          if (intersection.height >= intersection.width) {
-            pos = vel.dx > 0
-                ? Offset(rect.left - ballSize / 2, pos.dy)
-                : Offset(rect.right + ballSize / 2, pos.dy);
-          } else {
-            pos = vel.dy > 0
-                ? Offset(pos.dx, rect.top - ballSize / 2)
-                : Offset(pos.dx, rect.bottom + ballSize / 2);
-          }
-        }
+        // The strategy already resolves overlap
 
         ball
           ..position = pos

@@ -1,4 +1,4 @@
-import 'block.dart';
+import '../block.dart';
 
 class NormalBlock extends Block {
   NormalBlock({required super.position, required super.size, required String image})

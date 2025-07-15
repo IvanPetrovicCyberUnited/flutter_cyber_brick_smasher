@@ -1,4 +1,4 @@
-import 'block.dart';
+import '../block.dart';
 
 class SpecialBlock extends Block {
   SpecialBlock({required super.position, required super.size}) : super(hitPoints: 2);

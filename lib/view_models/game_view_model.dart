@@ -42,9 +42,6 @@ class GameViewModel extends ChangeNotifier {
 
   final Random _random = Random();
 
-  /// Strategy used for ball-block collisions.
-  BallCollisionStrategy ballCollisionStrategy = DefaultBounceStrategy();
-
   late Ball ball;
   int _currentLevel = 1;
   static const int _maxLevel = 5;
@@ -272,12 +269,14 @@ class GameViewModel extends ChangeNotifier {
       ballSize,
     );
 
+    final strategy = _getCollisionStrategy(activePowerUps);
+
     for (int i = 0; i < blocks.length; i++) {
       final block = blocks[i];
       final rect = block.rect;
 
       if (ballRect.overlaps(rect)) {
-        final result = ballCollisionStrategy.handleCollision(
+        final result = strategy.handleCollision(
           velocity: ball.velocity,
           ballRect: ballRect,
           blockRect: rect,
@@ -428,6 +427,16 @@ class GameViewModel extends ChangeNotifier {
       ballCollisionStrategy = PhaseballCollisionStrategy();
     }
     notifyListeners();
+  }
+
+  BallCollisionStrategy _getCollisionStrategy(Set<PowerUpType> activePowerUps) {
+    if (activePowerUps.contains(PowerUpType.phaseball)) {
+      return PhaseballCollisionStrategy();
+    }
+    if (activePowerUps.contains(PowerUpType.fireball)) {
+      return FireballCollisionStrategy();
+    }
+    return DefaultBounceStrategy();
   }
 
   void _fireProjectile() {

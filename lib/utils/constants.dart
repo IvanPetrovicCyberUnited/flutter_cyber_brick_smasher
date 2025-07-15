@@ -2,8 +2,8 @@ const double ballInitialX = 0.5;
 const double ballInitialY = 0.9;
 const double ballInitialDX = 0.01;
 const double ballInitialDY = -0.01;
-const double minBallSpeed = 0.005;
-const double maxBallSpeed = 0.03;
+const double minBallSpeed = 0.0005;
+const double maxBallSpeed = 0.003;
 
 const double paddleInitialX = 0.5;
 const double paddleSpeed = 0.02;

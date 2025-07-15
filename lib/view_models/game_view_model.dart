@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:vector_math/vector_math.dart';
 
 import '../models/ball.dart';
 import '../models/ball_decorator.dart';
@@ -14,6 +15,7 @@ import '../models/special_block.dart';
 import '../models/unbreakable_block.dart';
 import '../factories/level_factory.dart';
 import '../utils/constants.dart';
+import '../utils/physics_helper.dart';
 import '../strategies/ball_collision_strategy.dart';
 import '../strategies/default_bounce_strategy.dart';
 import '../strategies/fireball_collision_strategy.dart';
@@ -41,6 +43,13 @@ class GameViewModel extends ChangeNotifier {
   Timer? _levelTransitionTimer;
 
   final Random _random = Random();
+
+  /// Strategy used to resolve collisions between the ball and blocks.
+  late BallCollisionStrategy ballCollisionStrategy;
+
+  /// Returns the currently active collision strategy based on [activePowerUps].
+  BallCollisionStrategy getCollisionStrategy() =>
+      _getCollisionStrategy(activePowerUps);
 
   late Ball ball;
   int _currentLevel = 1;
@@ -227,6 +236,13 @@ class GameViewModel extends ChangeNotifier {
   void _update(Timer timer) {
     if (_state != GameState.playing) return;
 
+    final clampedStart = PhysicsHelper.clampVelocity(
+      Vector2(ball.velocity.dx, ball.velocity.dy),
+      minBallSpeed,
+      maxBallSpeed,
+    );
+    ball.velocity = Offset(clampedStart.x, clampedStart.y);
+
     ball.update();
     var pos = ball.position;
     var vel = ball.velocity;
@@ -242,9 +258,14 @@ class GameViewModel extends ChangeNotifier {
       pos = Offset(pos.dx, pos.dy.clamp(0.0, 1.0));
     }
 
+    final clampedWall = PhysicsHelper.clampVelocity(
+      Vector2(vel.dx, vel.dy),
+      minBallSpeed,
+      maxBallSpeed,
+    );
     ball
       ..position = pos
-      ..velocity = vel;
+      ..velocity = Offset(clampedWall.x, clampedWall.y);
 
     // 🧠 Paddle-Kollision mit realistischer Reflexion
     if (ball.velocity.dy > 0 &&
@@ -257,7 +278,12 @@ class GameViewModel extends ChangeNotifier {
       final newDx = clampedOffset * maxBounceAngle;
       final newDy = -ball.velocity.dy.abs();
 
-      ball.velocity = Offset(newDx, newDy);
+      final clampedBounce = PhysicsHelper.clampVelocity(
+        Vector2(newDx, newDy),
+        minBallSpeed,
+        maxBallSpeed,
+      );
+      ball.velocity = Offset(clampedBounce.x, clampedBounce.y);
       ball.position = Offset(ball.position.dx, paddleY);
     }
 
@@ -284,6 +310,12 @@ class GameViewModel extends ChangeNotifier {
 
         var vel = result.newVelocity;
         var pos = ball.position;
+        final clampedBlock = PhysicsHelper.clampVelocity(
+          Vector2(vel.dx, vel.dy),
+          minBallSpeed,
+          maxBallSpeed,
+        );
+        vel = Offset(clampedBlock.x, clampedBlock.y);
 
         if (!result.passThrough) {
           final intersection = ballRect.intersect(rect);

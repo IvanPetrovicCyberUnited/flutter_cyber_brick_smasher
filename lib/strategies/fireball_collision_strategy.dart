@@ -13,6 +13,7 @@ class FireballCollisionStrategy implements BallCollisionStrategy {
   }) {
     return BallCollisionResult(
       newVelocity: velocity,
+      newPosition: ballRect.center,
       destroyBlock: true,
       passThrough: true,
     );

@@ -2,13 +2,13 @@ import 'dart:ui';
 
 import '../models/level_design.dart';
 
-/// Factory that generates [LevelDesign] instances for the given level number.
+/// Factory that provides block layouts for each level.
 class LevelFactory {
   static const double _blockWidth = 0.1;
   static const double _blockHeight = 0.05;
 
-  /// Returns a [LevelDesign] for the provided [levelNumber].
-  static LevelDesign createLevel(int levelNumber) {
+  /// Returns a list of [BlockDescriptor]s for the provided [levelNumber].
+  static List<BlockDescriptor> createLevel(int levelNumber) {
     switch (levelNumber) {
       case 1:
         return _level1();
@@ -25,8 +25,8 @@ class LevelFactory {
     }
   }
 
-  static LevelDesign _level1() {
-    return LevelDesign(levelNumber: 1, blocks: [
+  static List<BlockDescriptor> _level1() {
+    return [
       BlockDescriptor(
         position: const Offset(0.2, 0.2),
         size: const Size(_blockWidth, _blockHeight),
@@ -42,11 +42,11 @@ class LevelFactory {
         size: const Size(_blockWidth, _blockHeight),
         type: 'unbreakable',
       ),
-    ]);
+    ];
   }
 
-  static LevelDesign _level2() {
-    return LevelDesign(levelNumber: 2, blocks: [
+  static List<BlockDescriptor> _level2() {
+    return [
       BlockDescriptor(
         position: const Offset(0.2, 0.3),
         size: const Size(_blockWidth, _blockHeight),
@@ -67,11 +67,11 @@ class LevelFactory {
         size: const Size(_blockWidth, _blockHeight),
         type: 'special',
       ),
-    ]);
+    ];
   }
 
-  static LevelDesign _level3() {
-    return LevelDesign(levelNumber: 3, blocks: [
+  static List<BlockDescriptor> _level3() {
+    return [
       BlockDescriptor(
         position: const Offset(0.35, 0.35),
         size: const Size(_blockWidth, _blockHeight),
@@ -102,10 +102,10 @@ class LevelFactory {
         size: const Size(_blockWidth, _blockHeight),
         type: 'special',
       ),
-    ]);
+    ];
   }
 
-  static LevelDesign _level4() {
+  static List<BlockDescriptor> _level4() {
     final blocks = <BlockDescriptor>[];
     const startX = 0.1;
     const stepX = 0.12;
@@ -122,10 +122,10 @@ class LevelFactory {
         type: 'normal',
       ));
     }
-    return LevelDesign(levelNumber: 4, blocks: blocks);
+    return blocks;
   }
 
-  static LevelDesign _level5() {
+  static List<BlockDescriptor> _level5() {
     final blocks = <BlockDescriptor>[];
     // Vertical line
     for (int i = 0; i < 5; i++) {
@@ -151,6 +151,6 @@ class LevelFactory {
       size: const Size(_blockWidth, _blockHeight),
       type: 'special',
     ));
-    return LevelDesign(levelNumber: 5, blocks: blocks);
+    return blocks;
   }
 }

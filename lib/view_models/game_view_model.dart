@@ -9,11 +9,12 @@ import 'package:vector_math/vector_math.dart';
 import '../models/ball.dart';
 import '../models/ball_decorator.dart';
 import '../models/block.dart';
-import '../models/normal_block.dart';
+import '../models/blocks/normal_block.dart';
 import '../models/power_up.dart';
-import '../models/special_block.dart';
-import '../models/unbreakable_block.dart';
+import '../models/blocks/special_block.dart';
+import '../models/blocks/unbreakable_block.dart';
 import '../factories/level_factory.dart';
+import '../factories/block_factory.dart';
 import '../utils/constants.dart';
 import '../utils/physics_helper.dart';
 import '../strategies/ball_collision_strategy.dart';
@@ -24,7 +25,8 @@ import '../strategies/phaseball_collision_strategy.dart';
 enum GameState { playing, levelCompleted, gameOver, gameFinished }
 
 class GameViewModel extends ChangeNotifier {
-  GameViewModel() {
+  GameViewModel({BlockFactory? blockFactory}) {
+    _blockFactory = blockFactory ?? DefaultBlockFactory(random: _random);
     _focusNode = FocusNode();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
@@ -43,6 +45,7 @@ class GameViewModel extends ChangeNotifier {
   Timer? _levelTransitionTimer;
 
   final Random _random = Random();
+  late final BlockFactory _blockFactory;
 
   /// Strategy used to resolve collisions between the ball and blocks.
   late BallCollisionStrategy ballCollisionStrategy;
@@ -200,36 +203,9 @@ class GameViewModel extends ChangeNotifier {
 
   void _createBlocks() {
     blocks.clear();
-    const blockImages = [
-      'assets/images/block_1.png',
-      'assets/images/block_2.png',
-      'assets/images/block_3.png',
-      'assets/images/block_4.png',
-    ];
-    final level = LevelFactory.createLevel(_currentLevel);
-    for (final descriptor in level.blocks) {
-      switch (descriptor.type) {
-        case 'normal':
-          final image = blockImages[_random.nextInt(blockImages.length)];
-          blocks.add(NormalBlock(
-            position: descriptor.position,
-            size: descriptor.size,
-            image: image,
-          ));
-          break;
-        case 'special':
-          blocks.add(SpecialBlock(
-            position: descriptor.position,
-            size: descriptor.size,
-          ));
-          break;
-        case 'unbreakable':
-          blocks.add(UnbreakableBlock(
-            position: descriptor.position,
-            size: descriptor.size,
-          ));
-          break;
-      }
+    final descriptors = LevelFactory.createLevel(_currentLevel);
+    for (final descriptor in descriptors) {
+      blocks.add(_blockFactory.createBlock(descriptor));
     }
   }
 

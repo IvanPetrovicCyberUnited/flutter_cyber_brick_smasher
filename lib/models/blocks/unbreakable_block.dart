@@ -1,4 +1,4 @@
-import 'block.dart';
+import '../block.dart';
 
 class UnbreakableBlock extends Block {
   UnbreakableBlock({required super.position, required super.size})

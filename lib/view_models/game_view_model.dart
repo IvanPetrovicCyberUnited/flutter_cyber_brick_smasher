@@ -16,6 +16,8 @@ import '../factories/level_factory.dart';
 import '../utils/constants.dart';
 import '../strategies/ball_collision_strategy.dart';
 import '../strategies/default_bounce_strategy.dart';
+import '../strategies/fireball_collision_strategy.dart';
+
 
 enum GameState { playing, levelCompleted, gameOver, gameFinished }
 
@@ -158,6 +160,7 @@ class GameViewModel extends ChangeNotifier {
       position: const Offset(ballInitialX, ballInitialY),
       velocity: const Offset(ballInitialDX, ballInitialDY),
     );
+    ballCollisionStrategy = DefaultBounceStrategy();
     paddleX = paddleInitialX;
     activePowerUps.clear();
     powerUps.clear();
@@ -402,6 +405,7 @@ class GameViewModel extends ChangeNotifier {
       activePowerUps.remove(type);
       if (type == PowerUpType.fireball && ball is Fireball) {
         ball = (ball as Fireball).ball;
+        ballCollisionStrategy = DefaultBounceStrategy();
       }
       if (type == PowerUpType.gun) {
         _gunFireTimer?.cancel();
@@ -415,6 +419,7 @@ class GameViewModel extends ChangeNotifier {
     }
     if (type == PowerUpType.fireball) {
       ball = Fireball(ball);
+      ballCollisionStrategy = FireballCollisionStrategy();
     }
     notifyListeners();
   }

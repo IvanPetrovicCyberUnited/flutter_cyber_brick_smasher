@@ -17,7 +17,7 @@ import '../utils/constants.dart';
 import '../strategies/ball_collision_strategy.dart';
 import '../strategies/default_bounce_strategy.dart';
 import '../strategies/fireball_collision_strategy.dart';
-
+import '../strategies/phaseball_collision_strategy.dart';
 
 enum GameState { playing, levelCompleted, gameOver, gameFinished }
 
@@ -407,6 +407,9 @@ class GameViewModel extends ChangeNotifier {
         ball = (ball as Fireball).ball;
         ballCollisionStrategy = DefaultBounceStrategy();
       }
+      if (type == PowerUpType.phaseball) {
+        ballCollisionStrategy = DefaultBounceStrategy();
+      }
       if (type == PowerUpType.gun) {
         _gunFireTimer?.cancel();
         _gunFireTimer = null;
@@ -420,6 +423,9 @@ class GameViewModel extends ChangeNotifier {
     if (type == PowerUpType.fireball) {
       ball = Fireball(ball);
       ballCollisionStrategy = FireballCollisionStrategy();
+    }
+    if (type == PowerUpType.phaseball) {
+      ballCollisionStrategy = PhaseballCollisionStrategy();
     }
     notifyListeners();
   }

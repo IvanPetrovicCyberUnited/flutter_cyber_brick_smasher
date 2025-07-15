@@ -6,6 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="6043237b-daf6-46df-a72c-6e73a8ea4789" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/ball.png" beforeDir="false" afterPath="$PROJECT_DIR$/assets/images/ball.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/images/ball_on_fire.png" beforeDir="false" afterPath="$PROJECT_DIR$/assets/images/ball_on_fire.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/factories/level_factory.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/factories/level_factory.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/utils/constants.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/utils/constants.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

@@ -2,8 +2,8 @@ const double ballInitialX = 0.5;
 const double ballInitialY = 0.9;
 const double ballInitialDX = 0.01;
 const double ballInitialDY = -0.01;
-const double minBallSpeed = 0.0005;
-const double maxBallSpeed = 0.003;
+const double minBallSpeed = 0.005;
+const double maxBallSpeed = 0.007;
 
 const double paddleInitialX = 0.5;
 const double paddleSpeed = 0.02;
@@ -19,7 +19,7 @@ const double blockHeight = 0.05;
 const double ballSize = 0.04;
 const double powerUpSpeed = 0.01;
 const double projectileSpeed = 0.02;
-const double powerUpProbability = 0.25;
+const double powerUpProbability = 1;
 
 const Duration frameDuration = Duration(milliseconds: 16);
 const Duration powerUpDuration = Duration(seconds: 7);

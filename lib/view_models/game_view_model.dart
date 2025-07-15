@@ -14,6 +14,10 @@ import '../models/special_block.dart';
 import '../models/unbreakable_block.dart';
 import '../factories/level_factory.dart';
 import '../utils/constants.dart';
+import '../strategies/ball_collision_strategy.dart';
+import '../strategies/default_bounce_strategy.dart';
+import '../strategies/fireball_collision_strategy.dart';
+import '../strategies/phaseball_collision_strategy.dart';
 
 enum GameState { playing, levelCompleted, gameOver, gameFinished }
 
@@ -37,6 +41,7 @@ class GameViewModel extends ChangeNotifier {
   Timer? _levelTransitionTimer;
 
   final Random _random = Random();
+
 
   late Ball ball;
   int _currentLevel = 1;
@@ -264,34 +269,41 @@ class GameViewModel extends ChangeNotifier {
       ballSize,
     );
 
+    final strategy = _getCollisionStrategy(activePowerUps);
+
     for (int i = 0; i < blocks.length; i++) {
       final block = blocks[i];
       final rect = block.rect;
 
       if (ballRect.overlaps(rect)) {
-        if (!activePowerUps.contains(PowerUpType.fireball)) {
+        final result = strategy.handleCollision(
+          velocity: ball.velocity,
+          ballRect: ballRect,
+          blockRect: rect,
+        );
+
+        var vel = result.newVelocity;
+        var pos = ball.position;
+
+        if (!result.passThrough) {
           final intersection = ballRect.intersect(rect);
-          var vel = ball.velocity;
-          var pos = ball.position;
 
           if (intersection.height >= intersection.width) {
-            vel = Offset(-vel.dx, vel.dy);
             pos = vel.dx > 0
                 ? Offset(rect.left - ballSize / 2, pos.dy)
                 : Offset(rect.right + ballSize / 2, pos.dy);
           } else {
-            vel = Offset(vel.dx, -vel.dy);
             pos = vel.dy > 0
                 ? Offset(pos.dx, rect.top - ballSize / 2)
                 : Offset(pos.dx, rect.bottom + ballSize / 2);
           }
-
-          ball
-            ..position = pos
-            ..velocity = vel;
         }
 
-        if (block.hit()) {
+        ball
+          ..position = pos
+          ..velocity = vel;
+
+        if (result.destroyBlock && block.hit()) {
           blocks.removeAt(i);
           score += 10;
 
@@ -407,6 +419,16 @@ class GameViewModel extends ChangeNotifier {
       ball = Fireball(ball);
     }
     notifyListeners();
+  }
+
+  BallCollisionStrategy _getCollisionStrategy(Set<PowerUpType> activePowerUps) {
+    if (activePowerUps.contains(PowerUpType.phaseball)) {
+      return PhaseballCollisionStrategy();
+    }
+    if (activePowerUps.contains(PowerUpType.fireball)) {
+      return FireballCollisionStrategy();
+    }
+    return DefaultBounceStrategy();
   }
 
   void _fireProjectile() {

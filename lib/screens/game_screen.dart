@@ -102,8 +102,7 @@ class _GameScreenState extends State<GameScreen> {
                       2 * _model.ball.position.dy - 1),
                   child: Builder(
                     builder: (_) {
-                      final strategy =
-                          _model._getCollisionStrategy(_model.activePowerUps);
+                      final strategy = _model.getCollisionStrategy();
                       final image = strategy is FireballCollisionStrategy
                           ? 'assets/images/ball_on_fire.png'
                           : strategy is PhaseballCollisionStrategy

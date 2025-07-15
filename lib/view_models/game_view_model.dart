@@ -45,6 +45,10 @@ class GameViewModel extends ChangeNotifier {
   /// Strategy used to resolve collisions between the ball and blocks.
   late BallCollisionStrategy ballCollisionStrategy;
 
+  /// Returns the currently active collision strategy based on [activePowerUps].
+  BallCollisionStrategy getCollisionStrategy() =>
+      _getCollisionStrategy(activePowerUps);
+
   late Ball ball;
   int _currentLevel = 1;
   static const int _maxLevel = 5;

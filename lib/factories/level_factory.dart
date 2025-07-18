@@ -1,9 +1,10 @@
 import 'dart:ui';
 import '../models/level_design.dart';
+import '../utils/game_dimensions.dart';
 
 class LevelFactory {
-  static const double _blockWidth = 0.1;
-  static const double _blockHeight = 0.05;
+  static double get _blockWidth => GameDimensions.blockWidth;
+  static double get _blockHeight => GameDimensions.blockHeight;
 
   static List<BlockDescriptor> createLevel(int levelNumber) {
     switch (levelNumber) {

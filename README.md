@@ -18,6 +18,11 @@ the ball on the paddle. A simple timer releases the ball after four
 seconds so the existing collision strategies continue to work without
 modification.
 
+When the multiball power-up is collected, a **Composite pattern**
+manages several `Ball` instances at once. The `BallManager` treats the
+collection of balls like a single entity so the game loop can update,
+render, and remove them uniformly.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

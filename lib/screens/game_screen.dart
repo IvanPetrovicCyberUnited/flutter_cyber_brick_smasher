@@ -100,23 +100,24 @@ class _GameScreenState extends State<GameScreen> {
                         : 'assets/images/paddle.png',
                   ),
                 ),
-                Positioned(
-                  left: (_model.ball.position.dx - GameDimensions.ballSize / 2) * width,
-                  top: (_model.ball.position.dy - GameDimensions.ballSize / 2) * height,
-                  width: GameDimensions.ballSize * width,
-                  height: GameDimensions.ballSize * height,
-                  child: Builder(
-                    builder: (_) {
-                      final strategy = _model.getCollisionStrategy();
-                      final image = strategy is FireballCollisionStrategy
-                          ? 'assets/images/ball_on_fire.png'
-                          : strategy is PhaseballCollisionStrategy
-                              ? 'assets/images/ball_phase.png'
-                              : 'assets/images/ball.png';
-                      return Image.asset(image);
-                    },
+                for (final ball in _model.balls)
+                  Positioned(
+                    left: (ball.position.dx - GameDimensions.ballSize / 2) * width,
+                    top: (ball.position.dy - GameDimensions.ballSize / 2) * height,
+                    width: GameDimensions.ballSize * width,
+                    height: GameDimensions.ballSize * height,
+                    child: Builder(
+                      builder: (_) {
+                        final strategy = _model.getCollisionStrategy();
+                        final image = strategy is FireballCollisionStrategy
+                            ? 'assets/images/ball_on_fire.png'
+                            : strategy is PhaseballCollisionStrategy
+                                ? 'assets/images/ball_phase.png'
+                                : 'assets/images/ball.png';
+                        return Image.asset(image);
+                      },
+                    ),
                   ),
-                ),
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: Padding(

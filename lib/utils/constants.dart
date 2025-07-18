@@ -6,7 +6,7 @@ const double minBallSpeed = 0.005;
 const double maxBallSpeed = 0.007;
 
 const double paddleInitialX = 0.5;
-const double paddleSpeed = 0.02; // maximum paddle speed per frame
+const double paddleSpeed = 0.006; // maximum paddle speed per frame
 const double paddleAcceleration = 0.002; // how quickly the paddle reaches max speed
 const double paddleY = 0.95;
 
@@ -26,7 +26,6 @@ const Duration gunFireInterval = Duration(milliseconds: 500);
 
 /// Duration for which the magnet power-up keeps the paddle magnetic.
 const Duration magnetPowerUpDuration = Duration(seconds: 15);
-
 /// Duration for which the magnet power-up holds the ball on the paddle.
 const Duration magnetHoldDuration = Duration(seconds: 4);
 

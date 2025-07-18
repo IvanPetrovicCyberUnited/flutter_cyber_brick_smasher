@@ -250,6 +250,7 @@ class GameViewModel extends ChangeNotifier {
       _paddleVelocity = (_paddleVelocity + paddleAcceleration)
           .clamp(0.0, paddleSpeed);
     } else {
+
       if (_paddleVelocity > 0) {
         _paddleVelocity = (_paddleVelocity - paddleAcceleration)
             .clamp(0.0, paddleSpeed);
@@ -459,6 +460,7 @@ class GameViewModel extends ChangeNotifier {
     // 🧱 Unten raus
     ballManager.removeOffscreen();
     _heldBalls.removeWhere((ball, _) => !balls.contains(ball));
+
     if (ballManager.isEmpty) {
       _gameOver();
     }
@@ -515,6 +517,7 @@ class GameViewModel extends ChangeNotifier {
     } else {
       _timers[type]?.cancel();
       _timers.remove(type);
+
     }
     if (type == PowerUpType.fireball) {
       ballCollisionStrategy = DefaultBounceStrategy();
@@ -527,6 +530,7 @@ class GameViewModel extends ChangeNotifier {
       _gunFireTimer = null;
       _gunShotsRemaining = 0;
     }
+
     notifyListeners();
   }
 

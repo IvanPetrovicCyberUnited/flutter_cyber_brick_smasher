@@ -16,23 +16,39 @@ import '../models/blocks/unbreakable_block.dart';
 import '../factories/level_factory.dart';
 import '../factories/block_factory.dart';
 import '../utils/constants.dart';
+import '../utils/game_dimensions.dart';
 import '../utils/physics_helper.dart';
 import '../strategies/ball_collision_strategy.dart';
 import '../strategies/default_bounce_strategy.dart';
+import '../strategies/paddle_bounce_strategy.dart';
 import '../strategies/fireball_collision_strategy.dart';
 import '../strategies/phaseball_collision_strategy.dart';
 
 enum GameState { playing, levelCompleted, gameOver, gameFinished }
 
 class GameViewModel extends ChangeNotifier {
-  GameViewModel({BlockFactory? blockFactory}) {
+  GameViewModel({
+    BlockFactory? blockFactory,
+    PaddleBounceStrategy? paddleBounceStrategy,
+  }) {
     _blockFactory = blockFactory ?? DefaultBlockFactory(random: _random);
     _focusNode = FocusNode();
+    this.paddleBounceStrategy =
+        paddleBounceStrategy ?? ClassicPaddleBounceStrategy();
+  }
+
+  bool _initialized = false;
+
+  /// Must be called once the screen size is known to set up sizes and start the game.
+  void initialize(Size size) {
+    if (_initialized) return;
+    GameDimensions.update(size);
+    resetGame();
+    _gameTimer = Timer.periodic(frameDuration, _update);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
-    resetGame();
-    _gameTimer = Timer.periodic(frameDuration, _update);
+    _initialized = true;
   }
 
   late FocusNode _focusNode;
@@ -42,6 +58,9 @@ class GameViewModel extends ChangeNotifier {
   Timer? _leftTimer;
   Timer? _rightTimer;
   Timer? _gunFireTimer;
+  int _gunShotsRemaining = 0;
+  Timer? _magnetTimer;
+  bool _magnetActive = false;
   Timer? _levelTransitionTimer;
 
   final Random _random = Random();
@@ -49,6 +68,9 @@ class GameViewModel extends ChangeNotifier {
 
   /// Strategy used to resolve collisions between the ball and blocks.
   late BallCollisionStrategy ballCollisionStrategy;
+
+  /// Strategy used to compute the ball's reflection when hitting the paddle.
+  late PaddleBounceStrategy paddleBounceStrategy;
 
   /// Returns the currently active collision strategy based on [activePowerUps].
   BallCollisionStrategy getCollisionStrategy() =>
@@ -137,6 +159,7 @@ class GameViewModel extends ChangeNotifier {
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     _gunFireTimer?.cancel();
+    _magnetTimer?.cancel();
     _levelTransitionTimer?.cancel();
     notifyListeners();
     _levelTransitionTimer?.cancel();
@@ -160,6 +183,7 @@ class GameViewModel extends ChangeNotifier {
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     _gunFireTimer?.cancel();
+    _magnetTimer?.cancel();
     _levelTransitionTimer?.cancel();
     notifyListeners();
   }
@@ -179,6 +203,9 @@ class GameViewModel extends ChangeNotifier {
     }
     _timers.clear();
     _gunFireTimer?.cancel();
+    _gunShotsRemaining = 0;
+    _magnetTimer?.cancel();
+    _magnetActive = false;
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     blocks.clear();
@@ -211,6 +238,17 @@ class GameViewModel extends ChangeNotifier {
 
   void _update(Timer timer) {
     if (_state != GameState.playing) return;
+
+    if (_magnetActive) {
+      final holdY = paddleY -
+          GameDimensions.paddleHeight / 2 -
+          GameDimensions.ballSize / 2;
+      ball
+        ..position = Offset(paddleX, holdY)
+        ..velocity = Offset.zero;
+      notifyListeners();
+      return;
+    }
 
     final clampedStart = PhysicsHelper.clampVelocity(
       Vector2(ball.velocity.dx, ball.velocity.dy),
@@ -246,29 +284,23 @@ class GameViewModel extends ChangeNotifier {
     // 🧠 Paddle-Kollision mit realistischer Reflexion
     if (ball.velocity.dy > 0 &&
         ball.position.dy >= paddleY &&
-        (ball.position.dx - paddleX).abs() <= paddleHalfWidth) {
-      final hitOffset = (ball.position.dx - paddleX) / paddleHalfWidth;
-      final clampedOffset = hitOffset.clamp(-1.0, 1.0);
-      const maxBounceAngle = 0.03;
-
-      final newDx = clampedOffset * maxBounceAngle;
-      final newDy = -ball.velocity.dy.abs();
-
-      final clampedBounce = PhysicsHelper.clampVelocity(
-        Vector2(newDx, newDy),
-        minBallSpeed,
-        maxBallSpeed,
+        (ball.position.dx - paddleX).abs() <= GameDimensions.paddleHalfWidth) {
+      final newVel = paddleBounceStrategy.calculateBounce(
+        ballPosition: ball.position,
+        ballVelocity: ball.velocity,
+        paddleX: paddleX,
       );
-      ball.velocity = Offset(clampedBounce.x, clampedBounce.y);
-      ball.position = Offset(ball.position.dx, paddleY);
+      ball
+        ..velocity = newVel
+        ..position = Offset(ball.position.dx, paddleY);
     }
 
     // 🎯 Ball-zu-Block-Kollision
     final ballRect = Rect.fromLTWH(
-      ball.position.dx - ballSize / 2,
-      ball.position.dy - ballSize / 2,
-      ballSize,
-      ballSize,
+      ball.position.dx - GameDimensions.ballSize / 2,
+      ball.position.dy - GameDimensions.ballSize / 2,
+      GameDimensions.ballSize,
+      GameDimensions.ballSize,
     );
 
     final strategy = _getCollisionStrategy(activePowerUps);
@@ -282,6 +314,7 @@ class GameViewModel extends ChangeNotifier {
           velocity: ball.velocity,
           ballRect: ballRect,
           blockRect: rect,
+          block: block,
         );
 
         var vel = result.newVelocity;
@@ -327,7 +360,7 @@ class GameViewModel extends ChangeNotifier {
       }
 
       if (newPos.dy >= paddleY &&
-          (newPos.dx - paddleX).abs() <= paddleHalfWidth) {
+          (newPos.dx - paddleX).abs() <= GameDimensions.paddleHalfWidth) {
         powerUps.removeAt(i);
         _activatePowerUp(p.type);
         continue;
@@ -341,10 +374,10 @@ class GameViewModel extends ChangeNotifier {
       final newPos = projectiles[i].translate(0, -projectileSpeed);
       bool remove = false;
       final projRect = Rect.fromLTWH(
-        newPos.dx - projectileWidth / 2,
-        newPos.dy - projectileHeight / 2,
-        projectileWidth,
-        projectileHeight,
+        newPos.dx - GameDimensions.projectileWidth / 2,
+        newPos.dy - GameDimensions.projectileHeight / 2,
+        GameDimensions.projectileWidth,
+        GameDimensions.projectileHeight,
       );
 
       for (int j = 0; j < blocks.length; j++) {
@@ -396,22 +429,14 @@ class GameViewModel extends ChangeNotifier {
   void _activatePowerUp(PowerUpType type) {
     activePowerUps.add(type);
     _timers[type]?.cancel();
-    _timers[type] = Timer(powerUpDuration, () {
-      activePowerUps.remove(type);
-      if (type == PowerUpType.fireball && ball is Fireball) {
-        ball = (ball as Fireball).ball;
-        ballCollisionStrategy = DefaultBounceStrategy();
-      }
-      if (type == PowerUpType.phaseball) {
-        ballCollisionStrategy = DefaultBounceStrategy();
-      }
-      if (type == PowerUpType.gun) {
-        _gunFireTimer?.cancel();
-        _gunFireTimer = null;
-      }
-      notifyListeners();
-    });
+    final duration =
+        type == PowerUpType.magnet ? magnetHoldDuration : powerUpDuration;
+    _timers[type] = Timer(duration, () => _deactivatePowerUp(type));
+    if (type == PowerUpType.magnet) {
+      _magnetActive = true;
+    }
     if (type == PowerUpType.gun) {
+      _gunShotsRemaining = maxGunShots;
       _gunFireTimer?.cancel();
       _gunFireTimer = Timer.periodic(gunFireInterval, (_) => _fireProjectile());
     }
@@ -422,6 +447,29 @@ class GameViewModel extends ChangeNotifier {
     if (type == PowerUpType.phaseball) {
       ballCollisionStrategy = PhaseballCollisionStrategy();
     }
+    notifyListeners();
+  }
+
+  void _deactivatePowerUp(PowerUpType type) {
+    activePowerUps.remove(type);
+    _timers[type]?.cancel();
+    if (type == PowerUpType.magnet) {
+      _magnetActive = false;
+      ball.velocity = const Offset(0, -minBallSpeed);
+    }
+    if (type == PowerUpType.fireball && ball is Fireball) {
+      ball = (ball as Fireball).ball;
+      ballCollisionStrategy = DefaultBounceStrategy();
+    }
+    if (type == PowerUpType.phaseball) {
+      ballCollisionStrategy = DefaultBounceStrategy();
+    }
+    if (type == PowerUpType.gun) {
+      _gunFireTimer?.cancel();
+      _gunFireTimer = null;
+      _gunShotsRemaining = 0;
+    }
+    _timers.remove(type);
     notifyListeners();
   }
 
@@ -436,7 +484,20 @@ class GameViewModel extends ChangeNotifier {
   }
 
   void _fireProjectile() {
-    projectiles.add(const Offset(paddleInitialX, projectileStartY));
+    if (_gunShotsRemaining <= 0) {
+      _deactivatePowerUp(PowerUpType.gun);
+      return;
+    }
+
+    final startY = paddleY -
+        GameDimensions.paddleHeight / 2 -
+        GameDimensions.projectileHeight / 2;
+    final leftX = paddleX - GameDimensions.paddleHalfWidth;
+    final rightX = paddleX + GameDimensions.paddleHalfWidth;
+
+    projectiles.add(Offset(leftX, startY));
+    projectiles.add(Offset(rightX, startY));
+    _gunShotsRemaining--;
     notifyListeners();
   }
 }

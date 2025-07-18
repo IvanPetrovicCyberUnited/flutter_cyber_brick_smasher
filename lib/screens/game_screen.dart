@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../models/block.dart';
 import '../models/power_up.dart';
 import '../utils/constants.dart';
+import '../utils/game_dimensions.dart';
 import '../view_models/game_view_model.dart';
 import '../strategies/fireball_collision_strategy.dart';
 import '../strategies/phaseball_collision_strategy.dart';
@@ -43,6 +44,9 @@ class _GameScreenState extends State<GameScreen> {
         builder: (context, constraints) {
           final width = constraints.maxWidth;
           final height = constraints.maxHeight;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _model.initialize(Size(width, height));
+          });
           return RawKeyboardListener(
             focusNode: _model.focusNode,
             onKey: _handleKey,
@@ -71,47 +75,49 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 for (final p in _model.powerUps)
                   Positioned(
-                    left: (p.position.dx - powerUpSize / 2) * width,
-                    top: (p.position.dy - powerUpSize / 2) * height,
-                    width: powerUpSize * width,
-                    height: powerUpSize * height,
+                    left: (p.position.dx - GameDimensions.powerUpSize / 2) * width,
+                    top: (p.position.dy - GameDimensions.powerUpSize / 2) * height,
+                    width: GameDimensions.powerUpSize * width,
+                    height: GameDimensions.powerUpSize * height,
                     child: Image.asset(powerUpImage(p.type)),
                   ),
                 for (final proj in _model.projectiles)
                   Positioned(
-                    left: (proj.dx - projectileWidth / 2) * width,
-                    top: (proj.dy - projectileHeight / 2) * height,
-                    width: projectileWidth * width,
-                    height: projectileHeight * height,
+                    left: (proj.dx - GameDimensions.projectileWidth / 2) * width,
+                    top: (proj.dy - GameDimensions.projectileHeight / 2) * height,
+                    width: GameDimensions.projectileWidth * width,
+                    height: GameDimensions.projectileHeight * height,
                     child: Image.asset('assets/images/projectile.png'),
                   ),
-                Align(
-                  alignment: Alignment(2 * _model.paddleX - 1, 1),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 48.0),
-                    child: Image.asset(
-                      _model.activePowerUps.contains(PowerUpType.gun)
-                          ? 'assets/images/paddle_with_gun.png'
-                          : 'assets/images/paddle.png',
+                Positioned(
+                  left: (_model.paddleX - GameDimensions.paddleHalfWidth) * width,
+                  top: (paddleY - GameDimensions.paddleHeight / 2) * height,
+                  width: GameDimensions.paddleHalfWidth * 2 * width,
+                  height: GameDimensions.paddleHeight * height,
+                  child: Image.asset(
+                    _model.activePowerUps.contains(PowerUpType.gun)
+                        ? 'assets/images/paddle_with_gun.png'
+                        : 'assets/images/paddle.png',
+                  ),
+                ),
+                for (final ball in _model.balls)
+                  Positioned(
+                    left: (ball.position.dx - GameDimensions.ballSize / 2) * width,
+                    top: (ball.position.dy - GameDimensions.ballSize / 2) * height,
+                    width: GameDimensions.ballSize * width,
+                    height: GameDimensions.ballSize * height,
+                    child: Builder(
+                      builder: (_) {
+                        final strategy = _model.getCollisionStrategy();
+                        final image = strategy is FireballCollisionStrategy
+                            ? 'assets/images/ball_on_fire.png'
+                            : strategy is PhaseballCollisionStrategy
+                                ? 'assets/images/ball_phase.png'
+                                : 'assets/images/ball.png';
+                        return Image.asset(image);
+                      },
                     ),
                   ),
-                ),
-                Align(
-                  alignment: Alignment(
-                      2 * _model.ball.position.dx - 1,
-                      2 * _model.ball.position.dy - 1),
-                  child: Builder(
-                    builder: (_) {
-                      final strategy = _model.getCollisionStrategy();
-                      final image = strategy is FireballCollisionStrategy
-                          ? 'assets/images/ball_on_fire.png'
-                          : strategy is PhaseballCollisionStrategy
-                              ? 'assets/images/ball_phase.png'
-                              : 'assets/images/ball.png';
-                      return Image.asset(image);
-                    },
-                  ),
-                ),
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: Padding(

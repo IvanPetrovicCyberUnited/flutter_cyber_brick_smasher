@@ -6,9 +6,9 @@ const double minBallSpeed = 0.005;
 const double maxBallSpeed = 0.007;
 
 const double paddleInitialX = 0.5;
-const double paddleSpeed = 0.02;
+const double paddleSpeed = 0.02; // maximum paddle speed per frame
+const double paddleAcceleration = 0.002; // how quickly the paddle reaches max speed
 const double paddleY = 0.95;
-const double paddleHalfWidth = 0.1;
 
 const int blockRows = 4;
 const int blockCols = 6;
@@ -16,7 +16,6 @@ const double blockSpacing = 0.02;
 const double blockTopOffset = 0.1;
 const double blockHeight = 0.05;
 
-const double ballSize = 0.04;
 const double powerUpSpeed = 0.01;
 const double projectileSpeed = 0.02;
 const double powerUpProbability = 1;
@@ -25,7 +24,17 @@ const Duration frameDuration = Duration(milliseconds: 16);
 const Duration powerUpDuration = Duration(seconds: 7);
 const Duration gunFireInterval = Duration(milliseconds: 500);
 
-const double powerUpSize = 0.05;
-const double projectileWidth = 0.02;
-const double projectileHeight = 0.04;
-const double projectileStartY = 0.93;
+/// Duration for which the magnet power-up keeps the paddle magnetic.
+const Duration magnetPowerUpDuration = Duration(seconds: 15);
+
+/// Duration for which the magnet power-up holds the ball on the paddle.
+const Duration magnetHoldDuration = Duration(seconds: 4);
+
+/// How many projectile pairs the gun can fire before deactivating.
+const int maxGunShots = 20;
+
+// Sizes are provided by GameDimensions
+const double powerUpSize = 0.05; // unused, kept for backward compatibility
+const double projectileWidth = 0.02; // unused
+const double projectileHeight = 0.04; // unused
+const double projectileStartY = 0.93; // unused

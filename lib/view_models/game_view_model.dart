@@ -16,6 +16,7 @@ import '../models/blocks/unbreakable_block.dart';
 import '../factories/level_factory.dart';
 import '../factories/block_factory.dart';
 import '../utils/constants.dart';
+import '../utils/game_dimensions.dart';
 import '../utils/physics_helper.dart';
 import '../strategies/ball_collision_strategy.dart';
 import '../strategies/default_bounce_strategy.dart';
@@ -28,11 +29,20 @@ class GameViewModel extends ChangeNotifier {
   GameViewModel({BlockFactory? blockFactory}) {
     _blockFactory = blockFactory ?? DefaultBlockFactory(random: _random);
     _focusNode = FocusNode();
+  }
+
+  bool _initialized = false;
+
+  /// Must be called once the screen size is known to set up sizes and start the game.
+  void initialize(Size size) {
+    if (_initialized) return;
+    GameDimensions.update(size);
+    resetGame();
+    _gameTimer = Timer.periodic(frameDuration, _update);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
-    resetGame();
-    _gameTimer = Timer.periodic(frameDuration, _update);
+    _initialized = true;
   }
 
   late FocusNode _focusNode;
@@ -246,8 +256,9 @@ class GameViewModel extends ChangeNotifier {
     // 🧠 Paddle-Kollision mit realistischer Reflexion
     if (ball.velocity.dy > 0 &&
         ball.position.dy >= paddleY &&
-        (ball.position.dx - paddleX).abs() <= paddleHalfWidth) {
-      final hitOffset = (ball.position.dx - paddleX) / paddleHalfWidth;
+        (ball.position.dx - paddleX).abs() <= GameDimensions.paddleHalfWidth) {
+      final hitOffset =
+          (ball.position.dx - paddleX) / GameDimensions.paddleHalfWidth;
       final clampedOffset = hitOffset.clamp(-1.0, 1.0);
       const maxBounceAngle = 0.03;
 
@@ -265,10 +276,10 @@ class GameViewModel extends ChangeNotifier {
 
     // 🎯 Ball-zu-Block-Kollision
     final ballRect = Rect.fromLTWH(
-      ball.position.dx - ballSize / 2,
-      ball.position.dy - ballSize / 2,
-      ballSize,
-      ballSize,
+      ball.position.dx - GameDimensions.ballSize / 2,
+      ball.position.dy - GameDimensions.ballSize / 2,
+      GameDimensions.ballSize,
+      GameDimensions.ballSize,
     );
 
     final strategy = _getCollisionStrategy(activePowerUps);
@@ -327,7 +338,7 @@ class GameViewModel extends ChangeNotifier {
       }
 
       if (newPos.dy >= paddleY &&
-          (newPos.dx - paddleX).abs() <= paddleHalfWidth) {
+          (newPos.dx - paddleX).abs() <= GameDimensions.paddleHalfWidth) {
         powerUps.removeAt(i);
         _activatePowerUp(p.type);
         continue;
@@ -341,10 +352,10 @@ class GameViewModel extends ChangeNotifier {
       final newPos = projectiles[i].translate(0, -projectileSpeed);
       bool remove = false;
       final projRect = Rect.fromLTWH(
-        newPos.dx - projectileWidth / 2,
-        newPos.dy - projectileHeight / 2,
-        projectileWidth,
-        projectileHeight,
+        newPos.dx - GameDimensions.projectileWidth / 2,
+        newPos.dy - GameDimensions.projectileHeight / 2,
+        GameDimensions.projectileWidth,
+        GameDimensions.projectileHeight,
       );
 
       for (int j = 0; j < blocks.length; j++) {

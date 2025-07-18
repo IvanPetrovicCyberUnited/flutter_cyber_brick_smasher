@@ -61,9 +61,10 @@ class GameViewModel extends ChangeNotifier {
   double _paddleVelocity = 0.0;
   Timer? _gunFireTimer;
   int _gunShotsRemaining = 0;
-  Timer? _magnetTimer;
+  Timer? _magnetPowerUpTimer;
   bool _magnetActive = false;
   Timer? _levelTransitionTimer;
+  final Map<Ball, DateTime> _heldBalls = {};
 
   final Random _random = Random();
   late final BlockFactory _blockFactory;
@@ -150,11 +151,12 @@ class GameViewModel extends ChangeNotifier {
     _state = GameState.levelCompleted;
     _gameTimer?.cancel();
     _gunFireTimer?.cancel();
-    _magnetTimer?.cancel();
+    _magnetPowerUpTimer?.cancel();
     _levelTransitionTimer?.cancel();
     _isMovingLeft = false;
     _isMovingRight = false;
     _paddleVelocity = 0;
+    _heldBalls.clear();
     notifyListeners();
     _levelTransitionTimer?.cancel();
     _levelTransitionTimer = Timer(const Duration(seconds: 2), () {
@@ -175,11 +177,12 @@ class GameViewModel extends ChangeNotifier {
     _state = GameState.gameOver;
     _gameTimer?.cancel();
     _gunFireTimer?.cancel();
-    _magnetTimer?.cancel();
+    _magnetPowerUpTimer?.cancel();
     _levelTransitionTimer?.cancel();
     _isMovingLeft = false;
     _isMovingRight = false;
     _paddleVelocity = 0;
+    _heldBalls.clear();
     notifyListeners();
   }
 
@@ -205,8 +208,9 @@ class GameViewModel extends ChangeNotifier {
     _paddleVelocity = 0;
     _gunFireTimer?.cancel();
     _gunShotsRemaining = 0;
-    _magnetTimer?.cancel();
+    _magnetPowerUpTimer?.cancel();
     _magnetActive = false;
+    _heldBalls.clear();
     blocks.clear();
     _createBlocks();
     _state = GameState.playing;
@@ -216,11 +220,13 @@ class GameViewModel extends ChangeNotifier {
   void dispose() {
     _gameTimer?.cancel();
     _gunFireTimer?.cancel();
+    _magnetPowerUpTimer?.cancel();
     _levelTransitionTimer?.cancel();
     for (final timer in _timers.values) {
       timer.cancel();
     }
     _timers.clear();
+    _heldBalls.clear();
     _focusNode.dispose();
     super.dispose();
   }
@@ -244,7 +250,7 @@ class GameViewModel extends ChangeNotifier {
       _paddleVelocity = (_paddleVelocity + paddleAcceleration)
           .clamp(0.0, paddleSpeed);
     } else {
-      
+
       if (_paddleVelocity > 0) {
         _paddleVelocity = (_paddleVelocity - paddleAcceleration)
             .clamp(0.0, paddleSpeed);
@@ -255,20 +261,27 @@ class GameViewModel extends ChangeNotifier {
     }
     paddleX = (paddleX + _paddleVelocity).clamp(0.0, 1.0);
 
-    if (_magnetActive && balls.isNotEmpty) {
-      final holdY = paddleY -
-          GameDimensions.paddleHeight / 2 -
-          GameDimensions.ballSize / 2;
-      balls.first
-        ..position = Offset(paddleX, holdY)
-        ..velocity = Offset.zero;
-      notifyListeners();
-      return;
-    }
-
     final strategy = _getCollisionStrategy(activePowerUps);
 
+    final now = DateTime.now();
+
     ballManager.forEach((ball) {
+      final holdStart = _heldBalls[ball];
+      if (holdStart != null) {
+        if (now.difference(holdStart) < magnetHoldDuration) {
+          final holdY = paddleY -
+              GameDimensions.paddleHeight / 2 -
+              GameDimensions.ballSize / 2;
+          ball
+            ..position = Offset(paddleX, holdY)
+            ..velocity = Offset.zero;
+          return;
+        } else {
+          _heldBalls.remove(ball);
+          ball.velocity = const Offset(0, -minBallSpeed);
+        }
+      }
+
       final clampedStart = PhysicsHelper.clampVelocity(
         Vector2(ball.velocity.dx, ball.velocity.dy),
         minBallSpeed,
@@ -300,11 +313,22 @@ class GameViewModel extends ChangeNotifier {
         ..position = pos
         ..velocity = Offset(clampedWall.x, clampedWall.y);
 
-      // 🧠 Paddle-Kollision mit realistischer Reflexion
+      // 🧠 Paddle-Kollision mit realistischer Reflexion oder Magnet
       if (ball.velocity.dy > 0 &&
           ball.position.dy >= paddleY &&
           (ball.position.dx - paddleX).abs() <=
               GameDimensions.paddleHalfWidth) {
+        if (_magnetActive && !_heldBalls.containsKey(ball)) {
+          _heldBalls[ball] = now;
+          final holdY = paddleY -
+              GameDimensions.paddleHeight / 2 -
+              GameDimensions.ballSize / 2;
+          ball
+            ..position = Offset(paddleX, holdY)
+            ..velocity = Offset.zero;
+          return;
+        }
+
         final newVel = paddleBounceStrategy.calculateBounce(
           ballPosition: ball.position,
           ballVelocity: ball.velocity,
@@ -435,6 +459,8 @@ class GameViewModel extends ChangeNotifier {
 
     // 🧱 Unten raus
     ballManager.removeOffscreen();
+    _heldBalls.removeWhere((ball, _) => !balls.contains(ball));
+
     if (ballManager.isEmpty) {
       _gameOver();
     }
@@ -455,10 +481,14 @@ class GameViewModel extends ChangeNotifier {
     }
 
     activePowerUps.add(type);
-    _timers[type]?.cancel();
-    final duration =
-        type == PowerUpType.magnet ? magnetHoldDuration : powerUpDuration;
-    _timers[type] = Timer(duration, () => _deactivatePowerUp(type));
+    if (type == PowerUpType.magnet) {
+      _magnetPowerUpTimer?.cancel();
+      _magnetPowerUpTimer =
+          Timer(magnetPowerUpDuration, () => _deactivatePowerUp(type));
+    } else {
+      _timers[type]?.cancel();
+      _timers[type] = Timer(powerUpDuration, () => _deactivatePowerUp(type));
+    }
 
     if (type == PowerUpType.magnet) {
       _magnetActive = true;
@@ -480,12 +510,14 @@ class GameViewModel extends ChangeNotifier {
 
   void _deactivatePowerUp(PowerUpType type) {
     activePowerUps.remove(type);
-    _timers[type]?.cancel();
     if (type == PowerUpType.magnet) {
       _magnetActive = false;
-      if (balls.isNotEmpty) {
-        balls.first.velocity = const Offset(0, -minBallSpeed);
-      }
+      _magnetPowerUpTimer?.cancel();
+      _magnetPowerUpTimer = null;
+    } else {
+      _timers[type]?.cancel();
+      _timers.remove(type);
+
     }
     if (type == PowerUpType.fireball) {
       ballCollisionStrategy = DefaultBounceStrategy();
@@ -498,7 +530,7 @@ class GameViewModel extends ChangeNotifier {
       _gunFireTimer = null;
       _gunShotsRemaining = 0;
     }
-    _timers.remove(type);
+
     notifyListeners();
   }
 

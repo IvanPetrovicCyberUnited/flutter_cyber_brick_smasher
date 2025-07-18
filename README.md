@@ -13,10 +13,10 @@ loop. For instance, the fireball collision logic delegates to the
 default bounce strategy when hitting unbreakable blocks, showing how
 strategies can be composed for flexible behavior.
 
-The magnet power-up temporarily overrides these strategies by holding
-the ball on the paddle. A simple timer releases the ball after four
-seconds so the existing collision strategies continue to work without
-modification.
+The magnet power-up uses a timer to keep the paddle magnetic for
+fifteen seconds. When a ball touches the paddle during this period it
+sticks for four seconds before being fired straight upward. Other balls
+and effects keep updating normally while a held ball waits to launch.
 
 When the multiball power-up is collected, a **Composite pattern**
 manages several `Ball` instances at once. The `BallManager` treats the

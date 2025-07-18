@@ -13,6 +13,11 @@ loop. For instance, the fireball collision logic delegates to the
 default bounce strategy when hitting unbreakable blocks, showing how
 strategies can be composed for flexible behavior.
 
+The magnet power-up temporarily overrides these strategies by holding
+the ball on the paddle. A simple timer releases the ball after four
+seconds so the existing collision strategies continue to work without
+modification.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

@@ -59,6 +59,8 @@ class GameViewModel extends ChangeNotifier {
   Timer? _rightTimer;
   Timer? _gunFireTimer;
   int _gunShotsRemaining = 0;
+  Timer? _magnetTimer;
+  bool _magnetActive = false;
   Timer? _levelTransitionTimer;
 
   final Random _random = Random();
@@ -157,6 +159,7 @@ class GameViewModel extends ChangeNotifier {
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     _gunFireTimer?.cancel();
+    _magnetTimer?.cancel();
     _levelTransitionTimer?.cancel();
     notifyListeners();
     _levelTransitionTimer?.cancel();
@@ -180,6 +183,7 @@ class GameViewModel extends ChangeNotifier {
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     _gunFireTimer?.cancel();
+    _magnetTimer?.cancel();
     _levelTransitionTimer?.cancel();
     notifyListeners();
   }
@@ -200,6 +204,8 @@ class GameViewModel extends ChangeNotifier {
     _timers.clear();
     _gunFireTimer?.cancel();
     _gunShotsRemaining = 0;
+    _magnetTimer?.cancel();
+    _magnetActive = false;
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     blocks.clear();
@@ -232,6 +238,17 @@ class GameViewModel extends ChangeNotifier {
 
   void _update(Timer timer) {
     if (_state != GameState.playing) return;
+
+    if (_magnetActive) {
+      final holdY = paddleY -
+          GameDimensions.paddleHeight / 2 -
+          GameDimensions.ballSize / 2;
+      ball
+        ..position = Offset(paddleX, holdY)
+        ..velocity = Offset.zero;
+      notifyListeners();
+      return;
+    }
 
     final clampedStart = PhysicsHelper.clampVelocity(
       Vector2(ball.velocity.dx, ball.velocity.dy),
@@ -412,7 +429,12 @@ class GameViewModel extends ChangeNotifier {
   void _activatePowerUp(PowerUpType type) {
     activePowerUps.add(type);
     _timers[type]?.cancel();
-    _timers[type] = Timer(powerUpDuration, () => _deactivatePowerUp(type));
+    final duration =
+        type == PowerUpType.magnet ? magnetHoldDuration : powerUpDuration;
+    _timers[type] = Timer(duration, () => _deactivatePowerUp(type));
+    if (type == PowerUpType.magnet) {
+      _magnetActive = true;
+    }
     if (type == PowerUpType.gun) {
       _gunShotsRemaining = maxGunShots;
       _gunFireTimer?.cancel();
@@ -431,6 +453,10 @@ class GameViewModel extends ChangeNotifier {
   void _deactivatePowerUp(PowerUpType type) {
     activePowerUps.remove(type);
     _timers[type]?.cancel();
+    if (type == PowerUpType.magnet) {
+      _magnetActive = false;
+      ball.velocity = const Offset(0, -minBallSpeed);
+    }
     if (type == PowerUpType.fireball && ball is Fireball) {
       ball = (ball as Fireball).ball;
       ballCollisionStrategy = DefaultBounceStrategy();

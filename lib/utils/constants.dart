@@ -23,6 +23,9 @@ const Duration frameDuration = Duration(milliseconds: 16);
 const Duration powerUpDuration = Duration(seconds: 7);
 const Duration gunFireInterval = Duration(milliseconds: 500);
 
+/// Duration for which the magnet power-up holds the ball on the paddle.
+const Duration magnetHoldDuration = Duration(seconds: 4);
+
 /// How many projectile pairs the gun can fire before deactivating.
 const int maxGunShots = 20;
 
@@ -31,4 +34,3 @@ const double powerUpSize = 0.05; // unused, kept for backward compatibility
 const double projectileWidth = 0.02; // unused
 const double projectileHeight = 0.04; // unused
 const double projectileStartY = 0.93; // unused
-

@@ -244,6 +244,7 @@ class GameViewModel extends ChangeNotifier {
       _paddleVelocity = (_paddleVelocity + paddleAcceleration)
           .clamp(0.0, paddleSpeed);
     } else {
+      
       if (_paddleVelocity > 0) {
         _paddleVelocity = (_paddleVelocity - paddleAcceleration)
             .clamp(0.0, paddleSpeed);

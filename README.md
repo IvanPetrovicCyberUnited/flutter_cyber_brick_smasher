@@ -1,6 +1,9 @@
 # flutter_cyber_brick_smasher
 
-A new Flutter project.
+Cyber Brick Smasher is a simple Flutter game that follows a basic
+Model-View-ViewModel (MVVM) approach. The game logic lives inside the
+`GameViewModel` while `GameScreen` renders the state. This separation
+makes it easier to test and extend the game mechanics.
 
 ## Getting Started
 

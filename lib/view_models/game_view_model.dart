@@ -297,6 +297,7 @@ class GameViewModel extends ChangeNotifier {
           velocity: ball.velocity,
           ballRect: ballRect,
           blockRect: rect,
+          block: block,
         );
 
         var vel = result.newVelocity;

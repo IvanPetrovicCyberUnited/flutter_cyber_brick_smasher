@@ -9,8 +9,9 @@ The physics interactions use the **Strategy pattern**. Different
 strategies handle block collisions and how the ball bounces off the
 paddle. By encapsulating these behaviors, new effects like fireball or
 alternative paddle mechanics can be added without changing the game
-loop.
-
+loop. For instance, the fireball collision logic delegates to the
+default bounce strategy when hitting unbreakable blocks, showing how
+strategies can be composed for flexible behavior.
 
 ## Getting Started
 

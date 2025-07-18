@@ -31,3 +31,4 @@ const double powerUpSize = 0.05; // unused, kept for backward compatibility
 const double projectileWidth = 0.02; // unused
 const double projectileHeight = 0.04; // unused
 const double projectileStartY = 0.93; // unused
+

@@ -123,14 +123,12 @@ class GameViewModel extends ChangeNotifier {
 
   void _stopMovingLeft() {
     _isMovingLeft = false;
-    _paddleVelocity = 0;
   }
 
   void _startMovingRight() => _isMovingRight = true;
 
   void _stopMovingRight() {
     _isMovingRight = false;
-    _paddleVelocity = 0;
   }
 
   void resetGame() {
@@ -238,7 +236,7 @@ class GameViewModel extends ChangeNotifier {
   void _update(Timer timer) {
     if (_state != GameState.playing) return;
 
-    // Handle paddle movement based on keyboard state.
+    // Handle paddle movement with acceleration and deceleration.
     if (_isMovingLeft && !_isMovingRight) {
       _paddleVelocity = (_paddleVelocity - paddleAcceleration)
           .clamp(-paddleSpeed, 0.0);
@@ -246,7 +244,14 @@ class GameViewModel extends ChangeNotifier {
       _paddleVelocity = (_paddleVelocity + paddleAcceleration)
           .clamp(0.0, paddleSpeed);
     } else {
-      _paddleVelocity = 0.0;
+      
+      if (_paddleVelocity > 0) {
+        _paddleVelocity = (_paddleVelocity - paddleAcceleration)
+            .clamp(0.0, paddleSpeed);
+      } else if (_paddleVelocity < 0) {
+        _paddleVelocity = (_paddleVelocity + paddleAcceleration)
+            .clamp(-paddleSpeed, 0.0);
+      }
     }
     paddleX = (paddleX + _paddleVelocity).clamp(0.0, 1.0);
 
@@ -454,6 +459,7 @@ class GameViewModel extends ChangeNotifier {
     final duration =
         type == PowerUpType.magnet ? magnetHoldDuration : powerUpDuration;
     _timers[type] = Timer(duration, () => _deactivatePowerUp(type));
+
     if (type == PowerUpType.magnet) {
       _magnetActive = true;
     }

@@ -23,10 +23,10 @@ manages several `Ball` instances at once. The `BallManager` treats the
 collection of balls like a single entity so the game loop can update,
 render, and remove them uniformly.
 
-Keyboard input now uses frame-based flags instead of timers so that
-holding or releasing the arrow keys moves the paddle smoothly with
+Keyboard input now uses frame-based flags instead of timers. Paddle
+movement relies on velocity and acceleration so that holding or
+releasing the arrow keys smoothly ramps the paddle speed up or down with
 immediate response.
-
 
 ## Getting Started
 

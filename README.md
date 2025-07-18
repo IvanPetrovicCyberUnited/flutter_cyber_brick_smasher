@@ -23,6 +23,11 @@ manages several `Ball` instances at once. The `BallManager` treats the
 collection of balls like a single entity so the game loop can update,
 render, and remove them uniformly.
 
+Level layouts use the **Factory Method pattern**. Each level class
+implements a common `Level` interface with a `build()` method, and
+`LevelFactory` instantiates the appropriate class so new levels can be
+added without modifying existing logic.
+
 Keyboard input now uses frame-based flags instead of timers. Paddle
 movement relies on velocity and acceleration so that holding or
 releasing the arrow keys smoothly ramps the paddle speed up or down with

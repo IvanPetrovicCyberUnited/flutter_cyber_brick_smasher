@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'ball_collision_strategy.dart';
+import '../models/block.dart';
 
 /// Default strategy for bouncing a ball off a block.
 class DefaultBounceStrategy implements BallCollisionStrategy {
@@ -9,6 +10,7 @@ class DefaultBounceStrategy implements BallCollisionStrategy {
     required Offset velocity,
     required Rect ballRect,
     required Rect blockRect,
+    required Block block,
   }) {
     final previousRect = ballRect.translate(-velocity.dx, -velocity.dy);
     final intersection = ballRect.intersect(blockRect);

@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import '../models/block.dart';
+
 /// Represents the result of a ball-block collision.
 class BallCollisionResult {
   final Offset newVelocity;
@@ -21,5 +23,6 @@ abstract class BallCollisionStrategy {
     required Offset velocity,
     required Rect ballRect,
     required Rect blockRect,
+    required Block block,
   });
 }

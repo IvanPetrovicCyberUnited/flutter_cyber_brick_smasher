@@ -23,6 +23,11 @@ manages several `Ball` instances at once. The `BallManager` treats the
 collection of balls like a single entity so the game loop can update,
 render, and remove them uniformly.
 
+Keyboard input now uses frame-based flags instead of timers so that
+holding or releasing the arrow keys moves the paddle smoothly with
+immediate response.
+
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

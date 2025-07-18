@@ -6,7 +6,8 @@ const double minBallSpeed = 0.005;
 const double maxBallSpeed = 0.007;
 
 const double paddleInitialX = 0.5;
-const double paddleSpeed = 0.02;
+const double paddleSpeed = 0.02; // maximum paddle speed per frame
+const double paddleAcceleration = 0.002; // how quickly the paddle reaches max speed
 const double paddleY = 0.95;
 
 const int blockRows = 4;

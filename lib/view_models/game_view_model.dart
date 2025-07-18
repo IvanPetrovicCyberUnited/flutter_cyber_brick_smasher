@@ -56,8 +56,9 @@ class GameViewModel extends ChangeNotifier {
   FocusNode get focusNode => _focusNode;
 
   Timer? _gameTimer;
-  Timer? _leftTimer;
-  Timer? _rightTimer;
+  bool _isMovingLeft = false;
+  bool _isMovingRight = false;
+  double _paddleVelocity = 0.0;
   Timer? _gunFireTimer;
   int _gunShotsRemaining = 0;
   Timer? _magnetTimer;
@@ -100,9 +101,9 @@ class GameViewModel extends ChangeNotifier {
   void handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-        if (_leftTimer == null) _startMovingLeft();
+        _startMovingLeft();
       } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-        if (_rightTimer == null) _startMovingRight();
+        _startMovingRight();
       }
     } else if (event is RawKeyUpEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
@@ -118,30 +119,18 @@ class GameViewModel extends ChangeNotifier {
   void startMovingRight() => _startMovingRight();
   void stopMovingRight() => _stopMovingRight();
 
-  void _startMovingLeft() {
-    _leftTimer?.cancel();
-    _leftTimer = Timer.periodic(frameDuration, (_) {
-      paddleX = (paddleX - paddleSpeed).clamp(0.0, 1.0);
-      notifyListeners();
-    });
-  }
+  void _startMovingLeft() => _isMovingLeft = true;
 
   void _stopMovingLeft() {
-    _leftTimer?.cancel();
-    _leftTimer = null;
+    _isMovingLeft = false;
+    _paddleVelocity = 0;
   }
 
-  void _startMovingRight() {
-    _rightTimer?.cancel();
-    _rightTimer = Timer.periodic(frameDuration, (_) {
-      paddleX = (paddleX + paddleSpeed).clamp(0.0, 1.0);
-      notifyListeners();
-    });
-  }
+  void _startMovingRight() => _isMovingRight = true;
 
   void _stopMovingRight() {
-    _rightTimer?.cancel();
-    _rightTimer = null;
+    _isMovingRight = false;
+    _paddleVelocity = 0;
   }
 
   void resetGame() {
@@ -149,6 +138,9 @@ class GameViewModel extends ChangeNotifier {
     _levelTransitionTimer?.cancel();
     _currentLevel = 1;
     score = 0;
+    _isMovingLeft = false;
+    _isMovingRight = false;
+    _paddleVelocity = 0;
     _setupLevel();
     _state = GameState.playing;
     _gameTimer = Timer.periodic(frameDuration, _update);
@@ -159,11 +151,12 @@ class GameViewModel extends ChangeNotifier {
   void _completeLevel() {
     _state = GameState.levelCompleted;
     _gameTimer?.cancel();
-    _leftTimer?.cancel();
-    _rightTimer?.cancel();
     _gunFireTimer?.cancel();
     _magnetTimer?.cancel();
     _levelTransitionTimer?.cancel();
+    _isMovingLeft = false;
+    _isMovingRight = false;
+    _paddleVelocity = 0;
     notifyListeners();
     _levelTransitionTimer?.cancel();
     _levelTransitionTimer = Timer(const Duration(seconds: 2), () {
@@ -183,11 +176,12 @@ class GameViewModel extends ChangeNotifier {
   void _gameOver() {
     _state = GameState.gameOver;
     _gameTimer?.cancel();
-    _leftTimer?.cancel();
-    _rightTimer?.cancel();
     _gunFireTimer?.cancel();
     _magnetTimer?.cancel();
     _levelTransitionTimer?.cancel();
+    _isMovingLeft = false;
+    _isMovingRight = false;
+    _paddleVelocity = 0;
     notifyListeners();
   }
 
@@ -208,12 +202,13 @@ class GameViewModel extends ChangeNotifier {
       timer.cancel();
     }
     _timers.clear();
+    _isMovingLeft = false;
+    _isMovingRight = false;
+    _paddleVelocity = 0;
     _gunFireTimer?.cancel();
     _gunShotsRemaining = 0;
     _magnetTimer?.cancel();
     _magnetActive = false;
-    _leftTimer?.cancel();
-    _rightTimer?.cancel();
     blocks.clear();
     _createBlocks();
     _state = GameState.playing;
@@ -222,8 +217,6 @@ class GameViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _gameTimer?.cancel();
-    _leftTimer?.cancel();
-    _rightTimer?.cancel();
     _gunFireTimer?.cancel();
     _levelTransitionTimer?.cancel();
     for (final timer in _timers.values) {
@@ -244,6 +237,18 @@ class GameViewModel extends ChangeNotifier {
 
   void _update(Timer timer) {
     if (_state != GameState.playing) return;
+
+    // Handle paddle movement based on keyboard state.
+    if (_isMovingLeft && !_isMovingRight) {
+      _paddleVelocity = (_paddleVelocity - paddleAcceleration)
+          .clamp(-paddleSpeed, 0.0);
+    } else if (_isMovingRight && !_isMovingLeft) {
+      _paddleVelocity = (_paddleVelocity + paddleAcceleration)
+          .clamp(0.0, paddleSpeed);
+    } else {
+      _paddleVelocity = 0.0;
+    }
+    paddleX = (paddleX + _paddleVelocity).clamp(0.0, 1.0);
 
     if (_magnetActive && balls.isNotEmpty) {
       final holdY = paddleY -

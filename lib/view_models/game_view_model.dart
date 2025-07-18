@@ -449,7 +449,6 @@ class GameViewModel extends ChangeNotifier {
     final duration =
         type == PowerUpType.magnet ? magnetHoldDuration : powerUpDuration;
     _timers[type] = Timer(duration, () => _deactivatePowerUp(type));
-
     if (type == PowerUpType.magnet) {
       _magnetActive = true;
     }

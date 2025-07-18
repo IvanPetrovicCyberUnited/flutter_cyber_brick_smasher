@@ -52,6 +52,7 @@ class GameViewModel extends ChangeNotifier {
   Timer? _leftTimer;
   Timer? _rightTimer;
   Timer? _gunFireTimer;
+  int _gunShotsRemaining = 0;
   Timer? _levelTransitionTimer;
 
   final Random _random = Random();
@@ -189,6 +190,7 @@ class GameViewModel extends ChangeNotifier {
     }
     _timers.clear();
     _gunFireTimer?.cancel();
+    _gunShotsRemaining = 0;
     _leftTimer?.cancel();
     _rightTimer?.cancel();
     blocks.clear();
@@ -407,22 +409,9 @@ class GameViewModel extends ChangeNotifier {
   void _activatePowerUp(PowerUpType type) {
     activePowerUps.add(type);
     _timers[type]?.cancel();
-    _timers[type] = Timer(powerUpDuration, () {
-      activePowerUps.remove(type);
-      if (type == PowerUpType.fireball && ball is Fireball) {
-        ball = (ball as Fireball).ball;
-        ballCollisionStrategy = DefaultBounceStrategy();
-      }
-      if (type == PowerUpType.phaseball) {
-        ballCollisionStrategy = DefaultBounceStrategy();
-      }
-      if (type == PowerUpType.gun) {
-        _gunFireTimer?.cancel();
-        _gunFireTimer = null;
-      }
-      notifyListeners();
-    });
+    _timers[type] = Timer(powerUpDuration, () => _deactivatePowerUp(type));
     if (type == PowerUpType.gun) {
+      _gunShotsRemaining = maxGunShots;
       _gunFireTimer?.cancel();
       _gunFireTimer = Timer.periodic(gunFireInterval, (_) => _fireProjectile());
     }
@@ -433,6 +422,25 @@ class GameViewModel extends ChangeNotifier {
     if (type == PowerUpType.phaseball) {
       ballCollisionStrategy = PhaseballCollisionStrategy();
     }
+    notifyListeners();
+  }
+
+  void _deactivatePowerUp(PowerUpType type) {
+    activePowerUps.remove(type);
+    _timers[type]?.cancel();
+    if (type == PowerUpType.fireball && ball is Fireball) {
+      ball = (ball as Fireball).ball;
+      ballCollisionStrategy = DefaultBounceStrategy();
+    }
+    if (type == PowerUpType.phaseball) {
+      ballCollisionStrategy = DefaultBounceStrategy();
+    }
+    if (type == PowerUpType.gun) {
+      _gunFireTimer?.cancel();
+      _gunFireTimer = null;
+      _gunShotsRemaining = 0;
+    }
+    _timers.remove(type);
     notifyListeners();
   }
 
@@ -447,7 +455,20 @@ class GameViewModel extends ChangeNotifier {
   }
 
   void _fireProjectile() {
-    projectiles.add(const Offset(paddleInitialX, projectileStartY));
+    if (_gunShotsRemaining <= 0) {
+      _deactivatePowerUp(PowerUpType.gun);
+      return;
+    }
+
+    final startY = paddleY -
+        GameDimensions.paddleHeight / 2 -
+        GameDimensions.projectileHeight / 2;
+    final leftX = paddleX - GameDimensions.paddleHalfWidth;
+    final rightX = paddleX + GameDimensions.paddleHalfWidth;
+
+    projectiles.add(Offset(leftX, startY));
+    projectiles.add(Offset(rightX, startY));
+    _gunShotsRemaining--;
     notifyListeners();
   }
 }

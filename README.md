@@ -27,6 +27,7 @@ Keyboard input now uses frame-based flags instead of timers so that
 holding or releasing the arrow keys moves the paddle smoothly with
 immediate response.
 
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

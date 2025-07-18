@@ -20,15 +20,21 @@ import '../utils/game_dimensions.dart';
 import '../utils/physics_helper.dart';
 import '../strategies/ball_collision_strategy.dart';
 import '../strategies/default_bounce_strategy.dart';
+import '../strategies/paddle_bounce_strategy.dart';
 import '../strategies/fireball_collision_strategy.dart';
 import '../strategies/phaseball_collision_strategy.dart';
 
 enum GameState { playing, levelCompleted, gameOver, gameFinished }
 
 class GameViewModel extends ChangeNotifier {
-  GameViewModel({BlockFactory? blockFactory}) {
+  GameViewModel({
+    BlockFactory? blockFactory,
+    PaddleBounceStrategy? paddleBounceStrategy,
+  }) {
     _blockFactory = blockFactory ?? DefaultBlockFactory(random: _random);
     _focusNode = FocusNode();
+    this.paddleBounceStrategy =
+        paddleBounceStrategy ?? ClassicPaddleBounceStrategy();
   }
 
   bool _initialized = false;
@@ -60,6 +66,9 @@ class GameViewModel extends ChangeNotifier {
 
   /// Strategy used to resolve collisions between the ball and blocks.
   late BallCollisionStrategy ballCollisionStrategy;
+
+  /// Strategy used to compute the ball's reflection when hitting the paddle.
+  late PaddleBounceStrategy paddleBounceStrategy;
 
   /// Returns the currently active collision strategy based on [activePowerUps].
   BallCollisionStrategy getCollisionStrategy() =>
@@ -259,21 +268,14 @@ class GameViewModel extends ChangeNotifier {
     if (ball.velocity.dy > 0 &&
         ball.position.dy >= paddleY &&
         (ball.position.dx - paddleX).abs() <= GameDimensions.paddleHalfWidth) {
-      final hitOffset =
-          (ball.position.dx - paddleX) / GameDimensions.paddleHalfWidth;
-      final clampedOffset = hitOffset.clamp(-1.0, 1.0);
-      const maxBounceAngle = 0.03;
-
-      final newDx = clampedOffset * maxBounceAngle;
-      final newDy = -ball.velocity.dy.abs();
-
-      final clampedBounce = PhysicsHelper.clampVelocity(
-        Vector2(newDx, newDy),
-        minBallSpeed,
-        maxBallSpeed,
+      final newVel = paddleBounceStrategy.calculateBounce(
+        ballPosition: ball.position,
+        ballVelocity: ball.velocity,
+        paddleX: paddleX,
       );
-      ball.velocity = Offset(clampedBounce.x, clampedBounce.y);
-      ball.position = Offset(ball.position.dx, paddleY);
+      ball
+        ..velocity = newVel
+        ..position = Offset(ball.position.dx, paddleY);
     }
 
     // 🎯 Ball-zu-Block-Kollision

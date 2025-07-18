@@ -5,6 +5,13 @@ Model-View-ViewModel (MVVM) approach. The game logic lives inside the
 `GameViewModel` while `GameScreen` renders the state. This separation
 makes it easier to test and extend the game mechanics.
 
+The physics interactions use the **Strategy pattern**. Different
+strategies handle block collisions and how the ball bounces off the
+paddle. By encapsulating these behaviors, new effects like fireball or
+alternative paddle mechanics can be added without changing the game
+loop.
+
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

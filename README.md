@@ -11,6 +11,7 @@ paddle. By encapsulating these behaviors, new effects like fireball or
 alternative paddle mechanics can be added without changing the game
 loop.
 
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

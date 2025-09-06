@@ -1,0 +1,4 @@
+context:
+  name: security-api
+  includePaths:
+    - http://localhost:8080/.*

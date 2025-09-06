@@ -1,0 +1,17 @@
+server:
+  error:
+    include-stacktrace: never
+  tomcat:
+    max-http-form-post-size: 1024
+spring:
+  mvc:
+    dispatch-options-request: true
+  web:
+    resources:
+      add-mappings: false
+app:
+  jwt:
+    secret: 0123456789abcdef0123456789abcdef
+    expiration: 600000
+  cors:
+    allowed-origins: https://example.com

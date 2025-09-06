@@ -1,0 +1,8 @@
+{
+  "image": "ghcr.io/devcontainers/java:1-21@sha256:5cc2b8b4e9ac898b1c881c34e65e073cfcd49007f4618c7f63c19e78146ee366",
+  "customizations": {
+    "vscode": {
+      "extensions": ["vscjava.vscode-java-pack"]
+    }
+  }
+}

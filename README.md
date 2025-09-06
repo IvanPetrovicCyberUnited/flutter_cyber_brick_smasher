@@ -45,3 +45,34 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Security Testing API
+
+This repository also contains a small Spring Boot 3 REST API intended for security tooling demonstrations.
+
+### Run
+
+```bash
+gradle bootRun
+```
+
+### Login and use
+
+```bash
+curl -X POST -H 'Content-Type: application/json' \
+  -d '{"username":"user","password":"password"}' http://localhost:8080/api/auth/login
+```
+
+Use the returned JWT to access protected routes:
+
+```bash
+curl -H 'Authorization: Bearer <token>' http://localhost:8080/api/users/me
+```
+
+Admin endpoint:
+
+```bash
+curl -X POST -H 'Authorization: Bearer <admin-token>' http://localhost:8080/api/admin/stats
+```
+
+Security features include rate limiting, strict headers, validation and centralized error handling. See `docs/SECURITY.md` for threat modeling notes.

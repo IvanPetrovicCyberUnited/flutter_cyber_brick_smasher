@@ -1,0 +1,78 @@
+openapi: 3.0.1
+info:
+  title: Security API
+  version: 0.0.1
+servers:
+  - url: http://localhost:8080
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+  /api/auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: JWT token
+  /api/echo:
+    get:
+      summary: Echo input
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sanitized echo
+  /api/users/me:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Current user
+      responses:
+        '200':
+          description: User info
+  /api/users/{id}:
+    get:
+      security:
+        - bearerAuth: []
+      summary: User by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User info
+        '403':
+          description: Forbidden
+  /api/admin/stats:
+    post:
+      security:
+        - bearerAuth: []
+      summary: Admin stats
+      responses:
+        '200':
+          description: Stats info

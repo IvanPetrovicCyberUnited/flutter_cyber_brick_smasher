@@ -107,6 +107,12 @@ unlinked_spec.ds
 # Coverage
 coverage/
 
+# Java
+*.jar
+*.war
+build/
+.jqwik-database/
+
 # Symbols
 app.*.symbols
 
